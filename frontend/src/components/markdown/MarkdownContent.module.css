@@ -1,0 +1,20 @@
+.markdown { color: #343a40; font-size: 1.05rem; line-height: 1.9; overflow-wrap: anywhere; }
+.markdown h1, .markdown h2, .markdown h3 { margin: 2.6rem 0 1rem; color: #212529; line-height: 1.4; letter-spacing: -0.045em; }
+.markdown h1 { font-size: 2.2rem; }
+.markdown h2 { padding-bottom: 0.55rem; border-bottom: 1px solid var(--line); font-size: 1.75rem; }
+.markdown h3 { font-size: 1.4rem; }
+.markdown p { margin: 1rem 0; }
+.markdown ul, .markdown ol { margin: 1rem 0; padding-left: 1.7rem; }
+.markdown li + li { margin-top: 0.35rem; }
+.markdown blockquote { margin: 1.8rem 0; padding: 0.9rem 1.2rem; border-left: 4px solid var(--moss); color: #495057; background: #e6fcf5; }
+.markdown code { padding: 0.18rem 0.4rem; border-radius: 4px; color: #087f5b; background: #e6fcf5; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.88em; }
+.markdown pre { overflow-x: auto; margin: 1.5rem 0; padding: 1.2rem; border-radius: 7px; color: #f8f9fa; background: #212529; }
+.markdown pre code { padding: 0; color: inherit; background: transparent; }
+.markdown a { color: #099268; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.markdown hr { margin: 2.5rem 0; border: 0; border-top: 1px solid var(--line); }
+.markdown table { width: 100%; margin: 1.4rem 0; border-collapse: collapse; font-size: 0.9rem; }
+.markdown th, .markdown td { padding: 0.65rem; border: 1px solid var(--line); text-align: left; }
+.markdown th { background: var(--paper-deep); }
+.imageNotice { display: block; margin: 1rem 0; padding: 1rem; border: 1px dashed var(--line); border-radius: 6px; color: var(--muted); font-size: 0.8rem; }
+
+@media (max-width: 720px) { .markdown { font-size: 1rem; } }

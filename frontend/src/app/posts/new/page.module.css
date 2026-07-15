@@ -1,0 +1,16 @@
+.page { width: min(1120px, calc(100% - 2.5rem)); min-height: 100vh; margin: 0 auto; padding-bottom: 7rem; }
+.header { min-height: 72px; display: flex; align-items: center; justify-content: space-between; }
+.brand { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.06em; }
+.brand span { color: var(--moss); }
+.close { padding: 0.55rem 0.9rem; border-radius: 999px; color: var(--muted); font-size: 0.8rem; font-weight: 700; background: #fff; }
+.close:hover { color: var(--ink); }
+.intro { padding: 4rem 0 2.5rem; }
+.intro span { color: var(--moss); font-size: 0.72rem; font-weight: 900; letter-spacing: 0.12em; }
+.intro h1 { margin-top: 0.75rem; font-size: clamp(2rem, 4vw, 3.15rem); line-height: 1.2; letter-spacing: -0.06em; }
+.intro p { margin-top: 0.8rem; color: var(--muted); line-height: 1.7; }
+
+@media (max-width: 720px) {
+  .page { width: min(100% - 1.5rem, 1120px); padding-bottom: 4rem; }
+  .header { min-height: 64px; }
+  .intro { padding: 2.8rem 0 1.5rem; }
+}

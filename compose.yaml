@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: fail-mysql
+    environment:
+      MYSQL_DATABASE: fail
+      MYSQL_USER: fail
+      MYSQL_PASSWORD: fail
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Seoul
+    ports:
+      - "13306:3306"
+    volumes:
+      - fail-mysql80-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  fail-mysql80-data:

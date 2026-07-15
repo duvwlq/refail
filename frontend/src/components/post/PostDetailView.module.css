@@ -1,0 +1,64 @@
+.page { min-height: 100vh; background: #fff; }
+.header { width: min(1120px, calc(100% - 2.5rem)); min-height: 72px; display: flex; align-items: center; justify-content: space-between; margin: 0 auto; }
+.brand { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.06em; }
+.brand span { color: var(--moss); }
+.back { padding: 0.55rem 0.9rem; border-radius: 999px; color: var(--muted); font-size: 0.8rem; font-weight: 700; background: var(--paper); }
+.article { width: min(760px, calc(100% - 2.5rem)); margin: 0 auto; padding: clamp(4rem, 9vw, 8rem) 0 7rem; }
+.heading { margin-bottom: 5rem; }
+.tags { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1.2rem; }
+.tags span { padding: 0.4rem 0.75rem; border-radius: 999px; color: #087f5b; background: #e6fcf5; font-size: 0.74rem; font-weight: 800; }
+.heading h1 { font-size: clamp(2.4rem, 7vw, 4.15rem); line-height: 1.15; letter-spacing: -0.065em; word-break: keep-all; }
+.meta { display: flex; align-items: center; gap: 0.55rem; margin-top: 1.5rem; color: var(--muted); font-size: 0.82rem; }
+.meta strong { color: var(--ink); }
+.headingFooter { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.ownerActions { display: flex; gap: 0.8rem; color: var(--muted); font-size: 0.76rem; }
+.ownerActions a, .ownerActions button { padding: 0; border: 0; color: inherit; background: transparent; cursor: pointer; }
+.ownerActions a:hover { color: var(--moss); }
+.ownerActions button:hover { color: #e03131; }
+.nextPlan { margin: 4rem 0; padding: 2rem; border-radius: 10px; background: #e6fcf5; }
+.nextPlan > span, .sectionLabel { color: #099268; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.1em; }
+.nextPlan h2 { margin-top: 0.55rem; font-size: 1.35rem; letter-spacing: -0.04em; }
+.nextPlan p { margin-top: 0.8rem; color: #343a40; line-height: 1.8; white-space: pre-wrap; }
+.updates { margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.updateComposer { margin-top: 4rem; padding: 1.5rem; border: 1px solid var(--line); border-radius: 10px; }.updateComposer > div { display:flex; align-items:center; justify-content:space-between; gap:1rem }.updateComposer span { color:var(--moss); font-size:.65rem; font-weight:900; letter-spacing:.1em }.updateComposer h2 { margin-top:.35rem; font-size:1.2rem }.updateComposer button { padding:.7rem 1rem; border:0; border-radius:6px; color:#fff; background:var(--moss); font-weight:800; cursor:pointer }.updateComposer form { display:grid; gap:.7rem; margin-top:1.2rem }.updateComposer select,.updateComposer textarea { padding:.8rem; border:1px solid var(--line); border-radius:6px; background:#fff; resize:vertical }.updateComposer form button { justify-self:end }
+.update { margin-top: 1.5rem; padding-left: 1.4rem; border-left: 3px solid #63e6be; }
+.update > div { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+.update time { color: var(--muted); font-size: 0.75rem; }
+.update > div > span { display:flex; gap:.6rem; align-items:center }.update > div button { padding:0; border:0; color:var(--muted); background:transparent; font-size:.7rem; cursor:pointer }.update > div button:last-child:hover{color:#e03131}
+.reactionSection { margin-top: 5rem; padding: 2rem; border-radius: 10px; background: var(--paper); }
+.reactionSection > div:first-child { display: flex; align-items: center; justify-content: space-between; }
+.reactionSection > div:first-child strong { font-size: 0.82rem; }
+.reactions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 1.2rem; }
+.reactions button { padding: 0.8rem; border: 1px solid var(--line); border-radius: 6px; color: #495057; background: #fff; font-weight: 700; cursor: pointer; }
+.reactions button:hover, .reactions button[data-selected="true"] { border-color: var(--moss); color: #087f5b; background: #e6fcf5; }
+.reactions button:disabled { cursor: wait; }
+.reactionSection > p { margin-top: 1rem; color: var(--muted); font-size: 0.75rem; }
+.reactionSection .actionMessage { color: #c92a2a; }
+.reportArea { margin-top: 1.5rem; text-align: right; }
+.reportArea > button { border: 0; color: var(--muted); background: transparent; font-size: 0.72rem; text-decoration: underline; cursor: pointer; }
+.reportForm { display: grid; gap: 1rem; margin-top: 1rem; padding: 1.4rem; border: 1px solid var(--line); border-radius: 8px; text-align: left; background: #fff; }
+.reportForm label { display: grid; gap: 0.45rem; font-size: 0.76rem; font-weight: 800; }
+.reportForm label span { color: var(--muted); font-weight: 400; }
+.reportForm select, .reportForm textarea { padding: 0.75rem; border: 1px solid var(--line); border-radius: 5px; outline: 0; background: #fff; resize: vertical; }
+.reportForm select:focus, .reportForm textarea:focus { border-color: var(--moss); }
+.reportForm > button { justify-self: end; padding: 0.7rem 1rem; border: 0; border-radius: 5px; color: #fff; background: var(--ink); cursor: pointer; }
+.reportForm p { color: #087f5b; font-size: 0.8rem; }
+.modalBackdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1rem; background: rgba(33, 37, 41, 0.48); backdrop-filter: blur(3px); }
+.deleteModal { width: min(420px, 100%); padding: 2rem; border-radius: 12px; background: #fff; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2); }
+.deleteModal > span { color: #e03131; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.1em; }
+.deleteModal h2 { margin-top: 0.6rem; font-size: 1.45rem; letter-spacing: -0.04em; }
+.deleteModal p { margin-top: 0.8rem; color: var(--muted); font-size: 0.82rem; line-height: 1.7; }
+.deleteModal > div { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.6rem; }
+.deleteModal button { padding: 0.75rem 1rem; border: 0; border-radius: 6px; font-weight: 800; cursor: pointer; }
+.deleteModal button:first-child { color: #495057; background: #e9ecef; }
+.deleteModal button:last-child { color: #fff; background: #e03131; }
+.deleteModal button:disabled { opacity: 0.6; cursor: wait; }
+
+@media (max-width: 640px) {
+  .header, .article { width: min(100% - 1.5rem, 760px); }
+  .article { padding-top: 3.5rem; }
+  .heading { margin-bottom: 3.5rem; }
+  .headingFooter { align-items: flex-start; flex-direction: column; }
+  .reactions { grid-template-columns: 1fr; }
+  .reactionSection, .nextPlan { padding: 1.25rem; }
+}

@@ -1,0 +1,13 @@
+.gradle/
+build/
+out/
+bin/
+.idea/
+*.iml
+*.log
+.agents/
+gradle-8.10.2/
+gradle-8.10.2-bin.zip
+.env
+.env.*
+!.env.example

@@ -1,0 +1,44 @@
+.editor { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.toolbar { min-height: 52px; display: flex; align-items: center; gap: 0.2rem; padding: 0 0.75rem; border-bottom: 1px solid var(--line); background: #f8f9fa; }
+.toolbar button { min-width: 34px; height: 34px; padding: 0 0.4rem; border: 0; border-radius: 4px; color: #495057; background: transparent; cursor: pointer; font-weight: 800; }
+.toolbar button:hover { color: var(--moss); background: #e6fcf5; }
+.toolbar a { margin-left: auto; color: var(--muted); font-size: 0.68rem; text-decoration: underline; text-underline-offset: 3px; }
+.mode { margin-right: 0.65rem; color: var(--moss); font-size: 0.65rem; font-weight: 900; letter-spacing: 0.12em; }
+.panes { min-height: 560px; display: grid; grid-template-columns: 1fr 1fr; }
+.writePane, .previewPane { min-width: 0; position: relative; }
+.writePane { display: flex; flex-direction: column; border-right: 1px solid var(--line); }
+.writePane > label, .previewLabel { padding: 1rem 1.3rem 0; color: var(--muted); font-size: 0.67rem; font-weight: 800; letter-spacing: 0.08em; }
+.writePane textarea { flex: 1; width: 100%; min-height: 500px; padding: 1.3rem; border: 0; outline: 0; color: var(--ink); background: #fff; font: 1rem/1.85 "Noto Sans KR", "Malgun Gothic", sans-serif; resize: none; }
+.writePane textarea::placeholder { color: #adb5bd; }
+.count { position: absolute; right: 1rem; bottom: 0.8rem; color: var(--muted); font-size: 0.65rem; }
+.previewPane { overflow-y: auto; max-height: 615px; padding-bottom: 2rem; background: #fbfcfd; }
+.previewLabel { display: block; }
+.previewEmpty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; color: var(--muted); text-align: center; }
+.previewEmpty strong { color: var(--ink); font-size: 1.2rem; }
+.previewEmpty p { max-width: 340px; margin-top: 0.7rem; font-size: 0.8rem; line-height: 1.7; }
+.markdown { padding: 1.5rem 2rem 3rem; color: #343a40; line-height: 1.85; overflow-wrap: anywhere; }
+.markdown h1, .markdown h2, .markdown h3 { margin: 2rem 0 0.8rem; line-height: 1.4; letter-spacing: -0.04em; }
+.markdown h1 { font-size: 2rem; }
+.markdown h2 { padding-bottom: 0.45rem; border-bottom: 1px solid var(--line); font-size: 1.55rem; }
+.markdown h3 { font-size: 1.25rem; }
+.markdown p { margin: 0.8rem 0; }
+.markdown ul, .markdown ol { margin: 0.8rem 0; padding-left: 1.6rem; }
+.markdown blockquote { margin: 1.4rem 0; padding: 0.7rem 1rem; border-left: 4px solid var(--moss); color: #495057; background: #e6fcf5; }
+.markdown code { padding: 0.15rem 0.35rem; border-radius: 3px; color: #087f5b; background: #e6fcf5; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.88em; }
+.markdown pre { overflow-x: auto; margin: 1.2rem 0; padding: 1.1rem; border-radius: 6px; color: #f8f9fa; background: #212529; }
+.markdown pre code { padding: 0; color: inherit; background: transparent; }
+.markdown a { color: #099268; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.markdown hr { margin: 2rem 0; border: 0; border-top: 1px solid var(--line); }
+.markdown table { width: 100%; margin: 1.2rem 0; border-collapse: collapse; font-size: 0.85rem; }
+.markdown th, .markdown td { padding: 0.55rem; border: 1px solid var(--line); text-align: left; }
+.markdown th { background: var(--paper-deep); }
+.imageNotice { display: block; margin: 1rem 0; padding: 1rem; border: 1px dashed var(--line); border-radius: 5px; color: var(--muted); font-size: 0.78rem; }
+
+@media (max-width: 850px) {
+  .toolbar { overflow-x: auto; }
+  .mode { display: none; }
+  .toolbar a { white-space: nowrap; }
+  .panes { min-height: 0; grid-template-columns: 1fr; }
+  .writePane { min-height: 440px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .previewPane { min-height: 360px; max-height: none; }
+}
