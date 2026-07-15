@@ -159,12 +159,12 @@ class AdminReportModerationIntegrationTest {
         mockMvc.perform(get("/api/v1/admin/metrics")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("AUTH_002"));
+                .andExpect(jsonPath("$.code").value("USER_002"));
 
         mockMvc.perform(get("/api/v1/admin/reports")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("AUTH_002"));
+                .andExpect(jsonPath("$.code").value("USER_002"));
     }
 
     private User saveUser(String email, String nickname, UserRole role) {

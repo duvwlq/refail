@@ -11,8 +11,7 @@ import com.fail.app.domain.report.entity.ReportStatus;
 import com.fail.app.domain.report.entity.ReportTargetType;
 import com.fail.app.domain.report.repository.ReportRepository;
 import com.fail.app.domain.user.entity.User;
-import com.fail.app.domain.user.entity.UserStatus;
-import com.fail.app.domain.user.repository.UserRepository;
+import com.fail.app.domain.user.policy.UserAccessPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +23,7 @@ public class ReportServiceImpl implements ReportService {
 
     private final ReportRepository reportRepository;
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
+    private final UserAccessPolicy userAccessPolicy;
 
     @Override
     @Transactional
@@ -50,17 +49,12 @@ public class ReportServiceImpl implements ReportService {
                 .status(ReportStatus.PENDING)
                 .build();
 
-        Report savedReport = reportRepository.save(report);
         postRepository.incrementReportCount(postId);
+        Report savedReport = reportRepository.save(report);
         return ReportResponse.from(savedReport);
     }
 
     private User getActiveUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
-        if (user.getStatus() == UserStatus.RESTRICTED) {
-            throw new ApiException(ErrorCode.USER_RESTRICTED);
-        }
-        return user;
+        return userAccessPolicy.getActiveUser(userId);
     }
 }

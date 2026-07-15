@@ -18,3 +18,13 @@ jwt:
   secret: fail-project-jwt-secret-key-should-be-long-enough-2026
   access-token-validity-seconds: 86400
   issuer: fail-test
+
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

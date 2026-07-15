@@ -11,6 +11,7 @@ import com.fail.app.domain.user.entity.User;
 import com.fail.app.domain.user.entity.UserRole;
 import com.fail.app.domain.user.entity.UserStatus;
 import com.fail.app.domain.user.repository.UserRepository;
+import com.fail.app.domain.user.policy.UserAccessPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserAccessPolicy userAccessPolicy;
 
     @Override
     @Transactional
@@ -54,9 +56,7 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS);
         }
-        if (user.getStatus() == UserStatus.RESTRICTED) {
-            throw new ApiException(ErrorCode.USER_RESTRICTED);
-        }
+        userAccessPolicy.validateActive(user);
 
         return new LoginResponse(
                 jwtTokenProvider.createAccessToken(user),
@@ -67,9 +67,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthUserResponse getCurrentUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
-
-        return AuthUserResponse.from(user);
+        return AuthUserResponse.from(userAccessPolicy.getActiveUser(userId));
     }
 }

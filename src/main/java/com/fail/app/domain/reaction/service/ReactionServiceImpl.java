@@ -12,8 +12,7 @@ import java.util.List;
 import com.fail.app.domain.reaction.entity.Reaction;
 import com.fail.app.domain.reaction.repository.ReactionRepository;
 import com.fail.app.domain.user.entity.User;
-import com.fail.app.domain.user.entity.UserStatus;
-import com.fail.app.domain.user.repository.UserRepository;
+import com.fail.app.domain.user.policy.UserAccessPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +24,7 @@ public class ReactionServiceImpl implements ReactionService {
 
     private final ReactionRepository reactionRepository;
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
+    private final UserAccessPolicy userAccessPolicy;
 
     @Override
     public ReactionResponse getReaction(Long userId, Long postId) {
@@ -57,12 +56,12 @@ public class ReactionServiceImpl implements ReactionService {
                 .orElse(null);
 
         if (reaction == null) {
+            postRepository.incrementReactionCount(postId);
             reaction = reactionRepository.save(Reaction.builder()
                     .post(post)
                     .user(user)
                     .reactionType(request.reactionType())
                     .build());
-            postRepository.incrementReactionCount(postId);
         } else {
             reaction.changeReactionType(request.reactionType());
         }
@@ -76,19 +75,14 @@ public class ReactionServiceImpl implements ReactionService {
         getActiveUser(userId);
         Post post = getPost(postId);
         reactionRepository.findByPostIdAndUserId(postId, userId).ifPresent(reaction -> {
-            reactionRepository.delete(reaction);
             postRepository.decrementReactionCount(postId);
+            reactionRepository.delete(reaction);
         });
         return new ReactionResponse(postId, null, false);
     }
 
     private User getActiveUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
-        if (user.getStatus() == UserStatus.RESTRICTED) {
-            throw new ApiException(ErrorCode.USER_RESTRICTED);
-        }
-        return user;
+        return userAccessPolicy.getActiveUser(userId);
     }
 
     private Post getPost(Long postId) {

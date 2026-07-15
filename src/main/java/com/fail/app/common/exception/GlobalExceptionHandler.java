@@ -9,6 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -42,6 +44,26 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.builder()
                         .code(ErrorCode.INVALID_INPUT.getCode())
                         .message(ErrorCode.INVALID_INPUT.getMessage())
+                        .timestamp(LocalDateTime.now())
+                        .build());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.builder()
+                        .code(ErrorCode.INVALID_INPUT.getCode())
+                        .message(ErrorCode.INVALID_INPUT.getMessage())
+                        .timestamp(LocalDateTime.now())
+                        .build());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException exception) {
+        return ResponseEntity.status(ErrorCode.RESOURCE_NOT_FOUND.getStatus())
+                .body(ErrorResponse.builder()
+                        .code(ErrorCode.RESOURCE_NOT_FOUND.getCode())
+                        .message(ErrorCode.RESOURCE_NOT_FOUND.getMessage())
                         .timestamp(LocalDateTime.now())
                         .build());
     }

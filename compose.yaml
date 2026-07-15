@@ -1,22 +1,69 @@
+name: refail
+
 services:
   mysql:
-    image: mysql:8.0
-    container_name: fail-mysql
+    image: mysql:8.4
+    restart: unless-stopped
     environment:
-      MYSQL_DATABASE: fail
-      MYSQL_USER: fail
-      MYSQL_PASSWORD: fail
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fail}
+      MYSQL_USER: ${MYSQL_USERNAME:-fail}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
       TZ: Asia/Seoul
-    ports:
-      - "13306:3306"
     volumes:
-      - fail-mysql80-data:/var/lib/mysql
+      - refail-mysql-data:/var/lib/mysql
+    ports:
+      - "${MYSQL_PORT:-13306}:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
       timeout: 3s
       retries: 20
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MYSQL_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-fail}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-fail}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:3000}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+    ports:
+      - "${BACKEND_PORT:-18080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:18080}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      API_INTERNAL_BASE_URL: http://backend:8080
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
 volumes:
-  fail-mysql80-data:
+  refail-mysql-data:

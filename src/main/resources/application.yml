@@ -26,6 +26,8 @@ spring:
     open-in-view: false
 
 logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{requestId:-no-request-id}] %logger{36} - %msg%n"
   level:
     org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:warn}
 
@@ -48,3 +50,19 @@ jwt:
 app:
   cors:
     allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000}
+
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    tags:
+      application: ${spring.application.name}

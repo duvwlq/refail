@@ -7,6 +7,7 @@ import com.fail.app.domain.admin.dto.response.AdminActionResponse;
 import com.fail.app.domain.admin.dto.response.AdminReportResponse;
 import com.fail.app.domain.moderation.entity.ModerationAction;
 import com.fail.app.domain.moderation.entity.ModerationActionType;
+import com.fail.app.domain.moderation.entity.ModerationTargetType;
 import com.fail.app.domain.moderation.repository.ModerationActionRepository;
 import com.fail.app.domain.post.entity.Post;
 import com.fail.app.domain.post.repository.PostRepository;
@@ -15,8 +16,8 @@ import com.fail.app.domain.report.entity.ReportTargetType;
 import com.fail.app.domain.report.repository.ReportRepository;
 import com.fail.app.domain.user.entity.User;
 import com.fail.app.domain.user.entity.UserRole;
-import com.fail.app.domain.user.entity.UserStatus;
 import com.fail.app.domain.user.repository.UserRepository;
+import com.fail.app.domain.user.policy.UserAccessPolicy;
 import com.fail.app.domain.admin.dto.request.AdminCategoryRequest;
 import com.fail.app.domain.category.dto.response.CategoryResponse;
 import com.fail.app.domain.category.entity.Category;
@@ -43,6 +44,7 @@ public class AdminServiceImpl implements AdminService {
     private final ModerationActionRepository moderationActionRepository;
     private final CategoryRepository categoryRepository;
     private final PostUpdateRepository postUpdateRepository;
+    private final UserAccessPolicy userAccessPolicy;
 
     @Override
     public Page<AdminReportResponse> getReports(Long adminUserId, ReportStatus status, Pageable pageable) {
@@ -66,7 +68,7 @@ public class AdminServiceImpl implements AdminService {
                         ReportStatus.PENDING
                 )
                 .forEach(report -> report.resolve(admin.getId(), now));
-        saveModerationAction(admin, ReportTargetType.POST, postId, ModerationActionType.HIDE_POST, request.reason());
+        saveModerationAction(admin, ModerationTargetType.POST, postId, ModerationActionType.HIDE_POST, request.reason());
         return new AdminActionResponse(postId, true, null, now);
     }
 
@@ -77,7 +79,7 @@ public class AdminServiceImpl implements AdminService {
         Post post = getPost(postId);
         LocalDateTime now = LocalDateTime.now();
         post.unhide();
-        saveModerationAction(admin, ReportTargetType.POST, postId, ModerationActionType.UNHIDE_POST, "숨김 해제");
+        saveModerationAction(admin, ModerationTargetType.POST, postId, ModerationActionType.UNHIDE_POST, "숨김 해제");
         return new AdminActionResponse(postId, false, null, now);
     }
 
@@ -88,7 +90,7 @@ public class AdminServiceImpl implements AdminService {
         User user = getUser(userId);
         LocalDateTime now = LocalDateTime.now();
         user.restrict();
-        saveModerationAction(admin, ReportTargetType.POST, userId, ModerationActionType.RESTRICT_USER, request.reason());
+        saveModerationAction(admin, ModerationTargetType.USER, userId, ModerationActionType.RESTRICT_USER, request.reason());
         return new AdminActionResponse(userId, false, user.getStatus().name(), now);
     }
 
@@ -99,7 +101,7 @@ public class AdminServiceImpl implements AdminService {
         User user = getUser(userId);
         LocalDateTime now = LocalDateTime.now();
         user.activate();
-        saveModerationAction(admin, ReportTargetType.POST, userId, ModerationActionType.ACTIVATE_USER, "사용자 활성화");
+        saveModerationAction(admin, ModerationTargetType.USER, userId, ModerationActionType.ACTIVATE_USER, "사용자 활성화");
         return new AdminActionResponse(userId, false, user.getStatus().name(), now);
     }
 
@@ -149,8 +151,8 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private User getAdmin(Long adminUserId) {
-        User user = getUser(adminUserId);
-        if (user.getRole() != UserRole.ADMIN || user.getStatus() != UserStatus.ACTIVE) {
+        User user = userAccessPolicy.getActiveUser(adminUserId);
+        if (user.getRole() != UserRole.ADMIN) {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
         return user;
@@ -168,7 +170,7 @@ public class AdminServiceImpl implements AdminService {
 
     private void saveModerationAction(
             User admin,
-            ReportTargetType targetType,
+            ModerationTargetType targetType,
             Long targetId,
             ModerationActionType actionType,
             String reason

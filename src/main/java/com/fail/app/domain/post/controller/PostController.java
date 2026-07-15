@@ -11,20 +11,19 @@ import com.fail.app.domain.post.dto.response.DeletePostResponse;
 import com.fail.app.domain.post.dto.response.DeletePostUpdateResponse;
 import com.fail.app.domain.post.dto.request.UpdatePostRequest;
 import com.fail.app.domain.post.service.PostService;
-import com.fail.app.common.exception.ApiException;
-import com.fail.app.common.exception.ErrorCode;
+import com.fail.app.common.web.ListQueryPolicy;
 import com.fail.app.domain.post.entity.PostSortType;
 import com.fail.app.domain.post.entity.FailureSize;
 import com.fail.app.common.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -60,14 +59,20 @@ public class PostController {
             @RequestParam(defaultValue = "latest") String sort,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) FailureSize failureSize,
+            @Parameter(schema = @Schema(maxLength = ListQueryPolicy.POST_KEYWORD_MAX_LENGTH))
             @RequestParam(required = false) String keyword,
+            @Parameter(schema = @Schema(minimum = "0", defaultValue = "0"))
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(schema = @Schema(minimum = "1", maximum = "50", defaultValue = "20"))
             @RequestParam(defaultValue = "20") int size
     ) {
-        if (page < 0 || size < 1 || size > 100) {
-            throw new ApiException(ErrorCode.INVALID_INPUT);
-        }
-        return postService.getPosts(categoryId, failureSize, keyword, PostSortType.from(sort), PageRequest.of(page, size));
+        return postService.getPosts(
+                categoryId,
+                failureSize,
+                ListQueryPolicy.normalizeKeyword(keyword, ListQueryPolicy.POST_KEYWORD_MAX_LENGTH),
+                PostSortType.from(sort),
+                ListQueryPolicy.pageRequest(page, size)
+        );
     }
 
     @GetMapping("/me")
@@ -75,10 +80,15 @@ public class PostController {
     @SecurityRequirement(name = OpenApiConfig.JWT_SCHEME_NAME)
     public Page<PostSummaryResponse> getMyPosts(
             @Parameter(hidden = true) CurrentUser currentUser,
+            @Parameter(schema = @Schema(minimum = "0", defaultValue = "0"))
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(schema = @Schema(minimum = "1", maximum = "50", defaultValue = "20"))
             @RequestParam(defaultValue = "20") int size
     ) {
-        return postService.getMyPosts(currentUser.userId(), PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return postService.getMyPosts(
+                currentUser.userId(),
+                ListQueryPolicy.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
     }
 
     @GetMapping("/{postId}")

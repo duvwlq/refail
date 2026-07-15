@@ -21,3 +21,9 @@ jwt:
   secret: local-only-jwt-secret-key-should-be-long-enough-2026
   access-token-validity-seconds: 86400
   issuer: fail-local
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}

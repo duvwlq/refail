@@ -18,8 +18,7 @@ import com.fail.app.domain.post.entity.FailureSize;
 import com.fail.app.domain.post.repository.PostRepository;
 import com.fail.app.domain.post.repository.PostUpdateRepository;
 import com.fail.app.domain.user.entity.User;
-import com.fail.app.domain.user.entity.UserStatus;
-import com.fail.app.domain.user.repository.UserRepository;
+import com.fail.app.domain.user.policy.UserAccessPolicy;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -39,7 +38,7 @@ public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final PostUpdateRepository postUpdateRepository;
-    private final UserRepository userRepository;
+    private final UserAccessPolicy userAccessPolicy;
     private final CategoryRepository categoryRepository;
 
     @Override
@@ -209,17 +208,16 @@ public class PostServiceImpl implements PostService {
     }
 
     private User getActiveUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
-        if (user.getStatus() == UserStatus.RESTRICTED) {
-            throw new ApiException(ErrorCode.USER_RESTRICTED);
-        }
-        return user;
+        return userAccessPolicy.getActiveUser(userId);
     }
 
     private Category getCategory(Long categoryId) {
-        return categoryRepository.findById(categoryId)
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND));
+        if (!category.isActive()) {
+            throw new ApiException(ErrorCode.CATEGORY_INACTIVE);
+        }
+        return category;
     }
 
     private Post getPostEntity(Long postId) {

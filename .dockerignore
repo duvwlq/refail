@@ -1,0 +1,11 @@
+.git
+.github
+.gradle
+.idea
+.agents
+build
+frontend
+gradle-8.10.2
+gradle-8.10.2-bin.zip
+*.log
+.env

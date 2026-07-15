@@ -1,7 +1,6 @@
 package com.fail.app.domain.moderation.entity;
 
 import com.fail.app.common.entity.BaseTimeEntity;
-import com.fail.app.domain.report.entity.ReportTargetType;
 import com.fail.app.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,7 +34,7 @@ public class ModerationAction extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private ReportTargetType targetType;
+    private ModerationTargetType targetType;
 
     @Column(nullable = false)
     private Long targetId;
@@ -50,7 +49,7 @@ public class ModerationAction extends BaseTimeEntity {
     @Builder
     private ModerationAction(
             User adminUser,
-            ReportTargetType targetType,
+            ModerationTargetType targetType,
             Long targetId,
             ModerationActionType actionType,
             String reason

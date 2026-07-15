@@ -14,10 +14,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import com.fail.app.common.exception.ApiException;
-import com.fail.app.common.exception.ErrorCode;
+import com.fail.app.common.web.ListQueryPolicy;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -51,16 +50,15 @@ public class AdminController {
     public Page<AdminReportResponse> getReports(
             @Parameter(hidden = true) CurrentUser currentUser,
             @RequestParam(required = false) ReportStatus status,
+            @Parameter(schema = @Schema(minimum = "0", defaultValue = "0"))
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(schema = @Schema(minimum = "1", maximum = "50", defaultValue = "20"))
             @RequestParam(defaultValue = "20") int size
     ) {
-        if (page < 0 || size < 1 || size > 100) {
-            throw new ApiException(ErrorCode.INVALID_INPUT);
-        }
         return adminService.getReports(
                 currentUser.userId(),
                 status,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
+                ListQueryPolicy.pageRequest(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
         );
     }
 

@@ -1,4 +1,11 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:18080";
+const PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:18080";
+
+function getApiBaseUrl() {
+  if (typeof window === "undefined") {
+    return process.env.API_INTERNAL_BASE_URL ?? PUBLIC_API_BASE_URL;
+  }
+  return PUBLIC_API_BASE_URL;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -16,7 +23,7 @@ type ApiRequestInit = RequestInit & {
 
 export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
   const { token, headers, ...requestInit } = init;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...requestInit,
     headers: {
       "Content-Type": "application/json",

@@ -3,6 +3,9 @@ package com.fail.app.common.exception;
 import org.springframework.http.HttpStatus;
 
 public enum ErrorCode {
+    RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_002", "요청한 리소스를 찾을 수 없습니다."),
+    USER_DELETED(HttpStatus.FORBIDDEN, "USER_005", "삭제된 사용자입니다."),
+    CATEGORY_INACTIVE(HttpStatus.CONFLICT, "CATEGORY_002", "비활성화된 카테고리는 선택할 수 없습니다."),
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "COMMON_001", "잘못된 입력입니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AUTH_001", "인증이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "AUTH_002", "권한이 없습니다."),
