@@ -106,7 +106,7 @@ class MySqlCoreIntegrationTest extends MySqlContainerIntegrationSupport {
                 "select count(*) from flyway_schema_history where success = 1",
                 Integer.class
         );
-        assertThat(appliedMigrations).isGreaterThanOrEqualTo(6);
+        assertThat(appliedMigrations).isGreaterThanOrEqualTo(7);
     }
 
     @Test
@@ -232,7 +232,28 @@ class MySqlCoreIntegrationTest extends MySqlContainerIntegrationSupport {
         Page<PostSummaryResponse> result = postService.getPosts(
                 category.getId(),
                 null,
-                suffix,
+                "searchable",
+                PostSortType.LATEST,
+                PageRequest.of(0, 20)
+        );
+
+        assertThat(result.getContent()).extracting(PostSummaryResponse::postId).containsExactly(visible.getId());
+    }
+
+    @Test
+    void fullTextSearchFindsKoreanTermsAndExcludesHiddenPostsOnMySql() {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        User author = saveUser("mysql-fulltext-" + suffix + "@example.com", "mysql-fulltext-" + suffix, UserStatus.ACTIVE);
+        Category category = saveCategory("mysql-fulltext-" + suffix, true);
+        Post visible = savePost(author, category, "다이어트 실패를 다시 돌아본 기록");
+        Post hidden = savePost(author, category, "숨겨진 다이어트 실패 기록");
+        hidden.hide(java.time.LocalDateTime.now());
+        postRepository.saveAndFlush(hidden);
+
+        Page<PostSummaryResponse> result = postService.getPosts(
+                category.getId(),
+                null,
+                "다이어트",
                 PostSortType.LATEST,
                 PageRequest.of(0, 20)
         );

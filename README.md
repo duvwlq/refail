@@ -49,6 +49,7 @@ flowchart LR
 - 사용자 기록·실패 크기·후속 상태에 맞춘 MySQL 복합 인덱스
 - 게시글 10건 목록 조회 SQL 최대 3회 회귀 테스트
 - 로컬 워밍업 후 게시글 목록 평균 응답 약 26ms
+- MySQL ngram FULLTEXT 검색 적용: 5만 건 본문 검색 평균 `72.47ms → 6.57ms`
 
 ### 동시성과 정합성
 
@@ -139,6 +140,13 @@ npm run build
 GitHub Actions에서도 백엔드 테스트와 프론트엔드 lint·build를 실행합니다.
 
 백엔드 전체 테스트에는 Docker 기반 MySQL 8.4 Testcontainers 테스트가 포함됩니다. Flyway 마이그레이션, 동시 공감·신고 정합성, 사용자 운영 이력, 삭제 사용자와 비활성 카테고리 정책을 실제 MySQL에서 검증합니다. 최종 검증 기준 16개 테스트 스위트의 27개 테스트가 모두 통과했습니다.
+
+검색 성능은 별도 작업으로 재현할 수 있습니다.
+
+```powershell
+.\scripts\benchmark-search.ps1 -PostCount 10000
+.\scripts\benchmark-search.ps1 -PostCount 50000
+```
 
 ## 관측성
 

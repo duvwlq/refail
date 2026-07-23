@@ -45,7 +45,28 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'performance'
+    }
+    environment 'DOCKER_API_VERSION', System.getenv('DOCKER_API_VERSION') ?: '1.44'
+    systemProperty 'api.version', System.getProperty('api.version') ?: '1.44'
+    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+        environment 'DOCKER_HOST', System.getenv('DOCKER_HOST') ?: 'npipe:////./pipe/dockerDesktopLinuxEngine'
+        systemProperty 'docker.client.strategy',
+                'org.testcontainers.dockerclient.EnvironmentAndSystemPropertyClientProviderStrategy'
+    }
+}
+
+tasks.register('searchBenchmark', Test) {
+    description = '실제 MySQL에서 LIKE와 FULLTEXT 검색 성능을 비교합니다.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'performance'
+    }
+    systemProperty 'benchmark.search.post-count',
+            project.findProperty('searchBenchmarkPostCount') ?: '10000'
     environment 'DOCKER_API_VERSION', System.getenv('DOCKER_API_VERSION') ?: '1.44'
     systemProperty 'api.version', System.getProperty('api.version') ?: '1.44'
     if (System.getProperty('os.name').toLowerCase().contains('windows')) {

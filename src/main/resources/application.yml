@@ -53,6 +53,8 @@ jwt:
 app:
   cors:
     allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000}
+  search:
+    fulltext-enabled: ${SEARCH_FULLTEXT_ENABLED:true}
 
 management:
   prometheus:

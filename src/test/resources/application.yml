@@ -31,3 +31,7 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus
+
+app:
+  search:
+    fulltext-enabled: false

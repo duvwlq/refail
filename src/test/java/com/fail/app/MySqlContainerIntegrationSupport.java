@@ -10,7 +10,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @SpringBootTest(properties = {
         "spring.flyway.enabled=true",
-        "spring.jpa.hibernate.ddl-auto=validate"
+        "spring.jpa.hibernate.ddl-auto=validate",
+        "app.search.fulltext-enabled=true"
 })
 abstract class MySqlContainerIntegrationSupport {
 

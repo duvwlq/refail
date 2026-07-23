@@ -22,6 +22,9 @@ import com.fail.app.domain.user.policy.UserAccessPolicy;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +33,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageImpl;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +45,9 @@ public class PostServiceImpl implements PostService {
     private final PostUpdateRepository postUpdateRepository;
     private final UserAccessPolicy userAccessPolicy;
     private final CategoryRepository categoryRepository;
+
+    @Value("${app.search.fulltext-enabled:false}")
+    private boolean fullTextSearchEnabled;
 
     @Override
     @Transactional
@@ -65,6 +73,10 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Page<PostSummaryResponse> getPosts(Long categoryId, FailureSize failureSize, String keyword, PostSortType sortType, Pageable pageable) {
+        if (shouldUseFullText(keyword)) {
+            return searchFullText(categoryId, failureSize, keyword.trim(), sortType, pageable);
+        }
+
         Sort sort = sortType == PostSortType.POPULAR
                 ? Sort.by(Sort.Order.desc("reactionCount"), Sort.Order.desc("createdAt"))
                 : Sort.by(Sort.Order.desc("createdAt"));
@@ -98,6 +110,44 @@ public class PostServiceImpl implements PostService {
                 : postUpdateRepository.findPostIdsWithUpdates(postIds);
 
         return posts.map(post -> PostSummaryResponse.of(post, postIdsWithUpdates.contains(post.getId())));
+    }
+
+    private Page<PostSummaryResponse> searchFullText(
+            Long categoryId,
+            FailureSize failureSize,
+            String keyword,
+            PostSortType sortType,
+            Pageable pageable
+    ) {
+        List<Long> ids = postRepository.searchFullTextIds(
+                categoryId,
+                failureSize == null ? null : failureSize.name(),
+                keyword,
+                sortType.name(),
+                pageable.getPageSize(),
+                pageable.getOffset()
+        );
+        long total = postRepository.countFullText(
+                categoryId,
+                failureSize == null ? null : failureSize.name(),
+                keyword
+        );
+        if (ids.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, total);
+        }
+
+        Map<Long, Post> postsById = postRepository.findAllByIdIn(ids).stream()
+                .collect(Collectors.toMap(Post::getId, Function.identity()));
+        List<Post> orderedPosts = ids.stream().map(postsById::get).toList();
+        Set<Long> postIdsWithUpdates = postUpdateRepository.findPostIdsWithUpdates(ids);
+        List<PostSummaryResponse> content = orderedPosts.stream()
+                .map(post -> PostSummaryResponse.of(post, postIdsWithUpdates.contains(post.getId())))
+                .toList();
+        return new PageImpl<>(content, pageable, total);
+    }
+
+    private boolean shouldUseFullText(String keyword) {
+        return fullTextSearchEnabled && keyword != null && keyword.trim().length() >= 2;
     }
 
     @Override

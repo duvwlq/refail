@@ -34,6 +34,16 @@ Flyway `V4`에서 다음 복합 인덱스를 추가한다.
 
 인덱스는 읽기를 빠르게 하지만 쓰기 비용과 저장 공간을 늘린다. 실제 API 조회 조건에 쓰이는 인덱스만 추가한다.
 
+### MySQL FULLTEXT 검색
+
+Flyway `V7`에서 `posts(title, content, emotion_tag)`에 ngram 파서를 사용하는 FULLTEXT 인덱스를 추가했다.
+
+- 2글자 이상 검색어는 MySQL FULLTEXT로 ID 페이지를 먼저 조회한다.
+- 조회된 ID의 게시글·작성자·카테고리는 `EntityGraph`로 한 번에 조회한다.
+- 1글자 검색과 H2 기반 테스트는 기존 LIKE 검색으로 처리한다.
+- 숨김·삭제, 카테고리, 실패 크기, 최신·공감순 정책은 기존과 동일하게 유지한다.
+- `SEARCH_FULLTEXT_ENABLED=false`로 FULLTEXT 경로를 끌 수 있다.
+
 ### JPA와 로그 설정
 
 - `hibernate.default_batch_fetch_size=100`으로 남아 있는 지연 로딩을 묶어서 처리한다.
@@ -61,8 +71,48 @@ MySQL 적용 인덱스는 다음 명령으로 확인할 수 있다.
 ```sql
 SHOW INDEX FROM posts;
 SHOW INDEX FROM post_updates;
+SHOW INDEX FROM posts WHERE Key_name = 'idx_posts_fulltext_search';
 ```
+
+## 검색 벤치마크
+
+2026-07-24 로컬 Docker Desktop의 MySQL 8.4에서 동일 데이터 생성 규칙으로 LIKE와 FULLTEXT를 비교했다. 각 조건은 3회 워밍업 후 10회 측정했다.
+
+### 게시글 1만 건
+
+| 시나리오 | LIKE 평균/p95 | FULLTEXT 평균/p95 | 결과 수 |
+| --- | ---: | ---: | ---: |
+| 제목 `다이어트` | 16.44 / 21.11ms | 3.91 / 5.00ms | 1,000 |
+| 본문 `알고리즘` | 16.18 / 19.67ms | 2.47 / 2.79ms | 400 |
+| 카테고리 + `면접` | 16.73 / 35.83ms | 1.76 / 1.98ms | 500 |
+
+### 게시글 5만 건
+
+| 시나리오 | LIKE 평균/p95 | FULLTEXT 평균/p95 | 결과 수 |
+| --- | ---: | ---: | ---: |
+| 제목 `다이어트` | 71.99 / 126.58ms | 15.94 / 20.86ms | 5,000 |
+| 본문 `알고리즘` | 72.47 / 105.49ms | 6.57 / 7.84ms | 2,000 |
+| 카테고리 + `면접` | 62.41 / 93.65ms | 5.27 / 5.72ms | 2,500 |
+
+LIKE 실행 계획은 노출 가능한 게시글 5만 건을 스캔했다. FULLTEXT는 `idx_posts_fulltext_search`의 전문 검색 결과만 읽었다. 세 시나리오 모두 결과 건수가 같아 현재 한국어 예시 검색의 정확도도 유지됐다.
+
+재현 명령:
+
+```powershell
+.\scripts\benchmark-search.ps1 -PostCount 10000
+.\scripts\benchmark-search.ps1 -PostCount 50000
+```
+
+보고서는 `build/reports/search-benchmark-{건수}.md`에 생성되며 `EXPLAIN ANALYZE` 결과를 포함한다.
+
+### 비용과 한계
+
+- FULLTEXT 인덱스를 유지하면서 게시글 5만 건을 단일 테스트 컨테이너에 순차 적재하는 데 약 11분이 걸렸다.
+- 이 수치는 실제 서비스의 단건 작성 지연이 아니라 벤치마크 데이터 생성 전체 시간이다.
+- ngram 인덱스는 일반 B-Tree보다 저장 공간과 쓰기 비용이 크다.
+- 한 글자 검색은 ngram 특성상 LIKE로 폴백한다.
+- 동의어, 오탈자, 형태소 기반 검색이 필요해질 때 별도 검색 엔진을 검토한다.
 
 ## 남은 확장 지점
 
-현재 제목, 본문, 감정 태그 검색은 `%키워드%` 조건이므로 일반 B-Tree 인덱스를 충분히 활용하지 못한다. 게시글이 수만 건 이상으로 늘고 실제 검색 지연이 확인되면 MySQL FULLTEXT 인덱스와 전문 검색 쿼리를 도입한다. 포트폴리오 규모에서 미리 검색 서버를 추가하는 것은 운영 복잡도와 비용이 더 크므로 보류한다.
+현재 데이터 규모에서는 MySQL FULLTEXT가 충분한 개선을 제공하므로 별도 검색 서버는 도입하지 않는다. 검색 품질 요구가 전문 검색 수준으로 커질 때만 전환한다.
