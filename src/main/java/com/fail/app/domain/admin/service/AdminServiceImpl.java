@@ -23,8 +23,6 @@ import com.fail.app.domain.category.dto.response.CategoryResponse;
 import com.fail.app.domain.category.entity.Category;
 import com.fail.app.domain.category.repository.CategoryRepository;
 import com.fail.app.domain.admin.dto.response.OperationMetricsResponse;
-import com.fail.app.domain.post.repository.PostUpdateRepository;
-import com.fail.app.domain.post.entity.PostUpdateStatus;
 import com.fail.app.domain.auth.service.RefreshTokenService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +42,6 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final ModerationActionRepository moderationActionRepository;
     private final CategoryRepository categoryRepository;
-    private final PostUpdateRepository postUpdateRepository;
     private final UserAccessPolicy userAccessPolicy;
     private final RefreshTokenService refreshTokenService;
 
@@ -142,14 +139,15 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public OperationMetricsResponse getMetrics(Long adminUserId) {
         getAdmin(adminUserId);
-        long total = postRepository.countByDeletedAtIsNull();
-        long withUpdates = postUpdateRepository.countPostsWithUpdates();
+        var metrics = postRepository.getOperationMetrics();
+        long total = metrics.getTotalPosts();
+        long withUpdates = metrics.getPostsWithUpdates();
         return new OperationMetricsResponse(
                 total, withUpdates, total == 0 ? 0 : Math.round(withUpdates * 1000.0 / total) / 10.0,
-                reportRepository.countByStatus(ReportStatus.PENDING),
-                postUpdateRepository.countByStatusAndDeletedAtIsNull(PostUpdateStatus.TRYING_AGAIN),
-                postUpdateRepository.countByStatusAndDeletedAtIsNull(PostUpdateStatus.STILL_FAILING),
-                postUpdateRepository.countByStatusAndDeletedAtIsNull(PostUpdateStatus.SUCCEEDED)
+                metrics.getPendingReports(),
+                metrics.getRetryingUpdates(),
+                metrics.getPausedUpdates(),
+                metrics.getSucceededUpdates()
         );
     }
 

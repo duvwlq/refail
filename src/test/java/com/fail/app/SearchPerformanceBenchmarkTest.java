@@ -41,7 +41,18 @@ class SearchPerformanceBenchmarkTest extends MySqlContainerIntegrationSupport {
                 .append("- MySQL: ").append(MYSQL.getDockerImageName()).append('\n')
                 .append("- 게시글: ").append(postCount).append("건\n")
                 .append("- 워밍업: ").append(WARMUP_COUNT).append("회\n")
-                .append("- 측정: ").append(SAMPLE_COUNT).append("회\n\n")
+                .append("- 측정: ").append(SAMPLE_COUNT).append("회\n\n");
+
+        OperationMeasurement legacyMetrics = measureOperation(this::loadLegacyMetrics);
+        OperationMeasurement integratedMetrics = measureOperation(this::loadIntegratedMetrics);
+        report.append("\n## 관리자 운영 지표 집계\n\n")
+                .append("| 방식 | SQL 수 | 평균(ms) | p95(ms) |\n")
+                .append("| --- | ---: | ---: | ---: |\n")
+                .append("| 개별 집계 | 6 | ").append("%.2f".formatted(legacyMetrics.averageMs()))
+                .append(" | ").append("%.2f".formatted(legacyMetrics.p95Ms())).append(" |\n")
+                .append("| 통합 집계 | 1 | ").append("%.2f".formatted(integratedMetrics.averageMs()))
+                .append(" | ").append("%.2f".formatted(integratedMetrics.p95Ms())).append(" |\n\n")
+                .append("## 검색 비교\n\n")
                 .append("| 시나리오 | 방식 | 결과 수 | 평균(ms) | p95(ms) |\n")
                 .append("| --- | --- | ---: | ---: | ---: |\n");
 
@@ -126,8 +137,84 @@ class SearchPerformanceBenchmarkTest extends MySqlContainerIntegrationSupport {
         if (!batch.isEmpty()) {
             jdbcTemplate.batchUpdate(sql, batch);
         }
+        jdbcTemplate.update("""
+                insert into post_updates (
+                    post_id, user_id, status, content, created_at, updated_at
+                )
+                select id, user_id,
+                       case
+                           when mod(id, 30) = 0 then 'SUCCEEDED'
+                           when mod(id, 20) = 0 then 'STILL_FAILING'
+                           else 'TRYING_AGAIN'
+                       end,
+                       '벤치마크 후속 기록', ?, ?
+                  from posts
+                 where mod(id, 10) = 0
+                """, now, now);
+        jdbcTemplate.update("""
+                insert into reports (
+                    reporter_user_id, target_type, target_id, reason_type,
+                    reason_detail, status, created_at, updated_at
+                )
+                select ?, 'POST', id, 'SPAM', '벤치마크 신고', 'PENDING', ?, ?
+                  from posts
+                 where mod(id, 50) = 0
+                """, userId, now, now);
         jdbcTemplate.execute("analyze table posts");
         return new BenchmarkFixture(categoryA, categoryB);
+    }
+
+    private void loadLegacyMetrics() {
+        jdbcTemplate.queryForObject("select count(*) from posts where deleted_at is null", Long.class);
+        jdbcTemplate.queryForObject(
+                "select count(distinct post_id) from post_updates where deleted_at is null",
+                Long.class
+        );
+        jdbcTemplate.queryForObject("select count(*) from reports where status = 'PENDING'", Long.class);
+        jdbcTemplate.queryForObject(
+                "select count(*) from post_updates where status = 'TRYING_AGAIN' and deleted_at is null",
+                Long.class
+        );
+        jdbcTemplate.queryForObject(
+                "select count(*) from post_updates where status = 'STILL_FAILING' and deleted_at is null",
+                Long.class
+        );
+        jdbcTemplate.queryForObject(
+                "select count(*) from post_updates where status = 'SUCCEEDED' and deleted_at is null",
+                Long.class
+        );
+    }
+
+    private void loadIntegratedMetrics() {
+        jdbcTemplate.queryForMap("""
+                select
+                    (select count(*) from posts where deleted_at is null) as total_posts,
+                    (select count(distinct post_id) from post_updates where deleted_at is null) as posts_with_updates,
+                    (select count(*) from reports where status = 'PENDING') as pending_reports,
+                    (select count(*) from post_updates
+                      where status = 'TRYING_AGAIN' and deleted_at is null) as retrying_updates,
+                    (select count(*) from post_updates
+                      where status = 'STILL_FAILING' and deleted_at is null) as paused_updates,
+                    (select count(*) from post_updates
+                      where status = 'SUCCEEDED' and deleted_at is null) as succeeded_updates
+                """);
+    }
+
+    private OperationMeasurement measureOperation(Runnable operation) {
+        for (int index = 0; index < WARMUP_COUNT; index++) {
+            operation.run();
+        }
+        List<Double> elapsed = new ArrayList<>(SAMPLE_COUNT);
+        for (int index = 0; index < SAMPLE_COUNT; index++) {
+            long started = System.nanoTime();
+            operation.run();
+            elapsed.add((System.nanoTime() - started) / 1_000_000.0);
+        }
+        elapsed.sort(Comparator.naturalOrder());
+        return new OperationMeasurement(
+                elapsed.stream().mapToDouble(Double::doubleValue).average().orElseThrow(),
+                elapsed.get((int) Math.ceil(SAMPLE_COUNT * 0.95) - 1)
+        );
     }
 
     private Measurement measureLike(SearchScenario scenario) {
@@ -227,5 +314,8 @@ class SearchPerformanceBenchmarkTest extends MySqlContainerIntegrationSupport {
     }
 
     private record Measurement(long resultCount, double averageMs, double p95Ms) {
+    }
+
+    private record OperationMeasurement(double averageMs, double p95Ms) {
     }
 }

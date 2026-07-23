@@ -188,6 +188,8 @@ class MySqlCoreIntegrationTest extends MySqlContainerIntegrationSupport {
         User admin = saveAdmin("mysql-admin-" + suffix + "@example.com", "mysql-admin-" + suffix);
         User target = saveUser("mysql-target-" + suffix + "@example.com", "mysql-target-" + suffix, UserStatus.ACTIVE);
 
+        assertThat(adminService.getMetrics(admin.getId()).totalPosts()).isGreaterThanOrEqualTo(0);
+
         adminService.restrictUser(admin.getId(), target.getId(), new AdminActionRequest("policy violation"));
         adminService.activateUser(admin.getId(), target.getId());
 

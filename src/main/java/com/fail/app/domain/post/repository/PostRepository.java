@@ -80,4 +80,33 @@ public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificat
             @Param("failureSize") String failureSize,
             @Param("keyword") String keyword
     );
+
+    @Query(value = """
+            select
+                (select count(*) from posts where deleted_at is null) as totalPosts,
+                (select count(distinct post_id) from post_updates where deleted_at is null) as postsWithUpdates,
+                (select count(*) from reports where status = 'PENDING') as pendingReports,
+                (select count(*) from post_updates where status = 'TRYING_AGAIN' and deleted_at is null)
+                    as retryingUpdates,
+                (select count(*) from post_updates where status = 'STILL_FAILING' and deleted_at is null)
+                    as pausedUpdates,
+                (select count(*) from post_updates where status = 'SUCCEEDED' and deleted_at is null)
+                    as succeededUpdates
+            """, nativeQuery = true)
+    OperationMetricsProjection getOperationMetrics();
+
+    interface OperationMetricsProjection {
+
+        long getTotalPosts();
+
+        long getPostsWithUpdates();
+
+        long getPendingReports();
+
+        long getRetryingUpdates();
+
+        long getPausedUpdates();
+
+        long getSucceededUpdates();
+    }
 }
