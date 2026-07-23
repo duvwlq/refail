@@ -55,6 +55,22 @@ app:
     allowed-origins: ${FRONTEND_ORIGINS:http://localhost:3000}
   search:
     fulltext-enabled: ${SEARCH_FULLTEXT_ENABLED:true}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    trust-forwarded-for: ${RATE_LIMIT_TRUST_FORWARDED_FOR:false}
+    max-entries: ${RATE_LIMIT_MAX_ENTRIES:10000}
+    login:
+      limit: ${RATE_LIMIT_LOGIN_LIMIT:5}
+      window-seconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:60}
+    signup:
+      limit: ${RATE_LIMIT_SIGNUP_LIMIT:3}
+      window-seconds: ${RATE_LIMIT_SIGNUP_WINDOW_SECONDS:3600}
+    refresh:
+      limit: ${RATE_LIMIT_REFRESH_LIMIT:10}
+      window-seconds: ${RATE_LIMIT_REFRESH_WINDOW_SECONDS:60}
+    report:
+      limit: ${RATE_LIMIT_REPORT_LIMIT:5}
+      window-seconds: ${RATE_LIMIT_REPORT_WINDOW_SECONDS:3600}
 
 management:
   prometheus:

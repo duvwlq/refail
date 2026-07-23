@@ -35,3 +35,19 @@ management:
 app:
   search:
     fulltext-enabled: false
+  rate-limit:
+    enabled: true
+    trust-forwarded-for: false
+    max-entries: 10000
+    login:
+      limit: 1000
+      window-seconds: 60
+    signup:
+      limit: 1000
+      window-seconds: 60
+    refresh:
+      limit: 1000
+      window-seconds: 60
+    report:
+      limit: 1000
+      window-seconds: 60

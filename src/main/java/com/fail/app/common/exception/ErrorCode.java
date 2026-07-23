@@ -22,6 +22,7 @@ public enum ErrorCode {
     NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "USER_004", "이미 사용 중인 닉네임입니다."),
     DUPLICATE_REPORT(HttpStatus.CONFLICT, "REPORT_001", "이미 신고한 게시글입니다."),
     DUPLICATE_REACTION(HttpStatus.CONFLICT, "REACTION_001", "이미 처리된 공감 요청입니다."),
+    RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "RATE_001", "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_999", "서버 오류가 발생했습니다.");
 
     private final HttpStatus status;

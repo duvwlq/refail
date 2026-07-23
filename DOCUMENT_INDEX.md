@@ -19,6 +19,7 @@
 - `DATABASE.md`: MySQL·Flyway 실행 방법
 - `SWAGGER.md`: OpenAPI 문서 사용 방법
 - `AUTH_SECURITY.md`: JWT Access Token과 회전형 Refresh Token 보안 정책
+- `RATE_LIMIT_POLICY.md`: 로그인·회원가입·갱신·신고 API 요청 제한 정책
 
 ## 품질과 운영
 

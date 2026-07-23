@@ -3,6 +3,7 @@ package com.fail.app.common.config;
 import com.fail.app.common.security.JwtAuthenticationFilter;
 import com.fail.app.common.security.RestAuthenticationEntryPoint;
 import com.fail.app.common.security.RestAccessDeniedHandler;
+import com.fail.app.common.web.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -15,15 +16,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.config.Customizer;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, RateLimitProperties.class})
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -51,7 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(rateLimitFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
@@ -59,5 +63,14 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> disableRateLimitServletRegistration(
+            RateLimitFilter filter
+    ) {
+        FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 }
