@@ -25,12 +25,21 @@
 - 본인 게시글 공감 금지
 - 댓글 기능 제외
 - 게시글 신고
+- 로그인·회원가입·토큰 갱신·신고 요청 제한
 
 ## 관리자 기능
 - 신고 상태별 목록과 신고 사유 조회
 - 게시글 숨김·복구
 - 카테고리 생성·수정·비활성화 API
 - 전체 게시글, 후속 기록률, 대기 신고, 재시도·중단·극복 지표
+
+## 인증과 운영
+- 15분 Access Token과 회전형 Refresh Token
+- 로그아웃, 토큰 재사용 탐지, 사용자 제한 시 세션 폐기
+- MySQL ngram FULLTEXT 검색
+- 요청 ID와 API 지연 시간 로그
+- Prometheus·Grafana 대시보드와 경보 규칙
+- Docker Compose와 GitHub Actions 자동 검증
 
 ## 로컬 시연 계정
 - 일반 사용자: `demo@refail.local` / `password123`

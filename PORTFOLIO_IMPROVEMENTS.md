@@ -34,7 +34,7 @@
 | --- | --- |
 | 프론트엔드 | Next.js, TypeScript, 마크다운 에디터·렌더러 |
 | 백엔드 | Java 21, Spring Boot 3, Spring Data JPA, Spring Security |
-| 인증 | JWT Bearer 인증 |
+| 인증 | JWT Access Token, 회전형 Refresh Token |
 | 데이터베이스 | MySQL 8, Flyway |
 | API 문서 | Swagger UI, OpenAPI |
 | 테스트 | JUnit 5, Spring Boot Integration Test, H2, Testcontainers MySQL 8.4 |
@@ -56,8 +56,18 @@
 | 데이터 관리 | 수동 스키마 변경은 환경마다 불일치할 수 있음 | Flyway 버전 마이그레이션과 `ddl-auto=validate` | 실제 MySQL 시작 시 마이그레이션 검증 |
 | 조회 성능 | 목록에서 작성자·카테고리 지연 로딩으로 N+1 발생 | EntityGraph, 일괄 후속 기록 조회, 복합 인덱스, 캐시 | SQL 3회 이하 회귀 테스트와 API 측정 |
 | 운영 안정성 | 실제 MySQL 잠금, 권한 회수, 입력 폭주를 H2만으로 보장하기 어려움 | 잠금 순서 통일, 상태 정책 중앙화, 입력 상한, Testcontainers | MySQL 8.4 동시 요청·정책 통합 테스트 |
-| 배포·관측 | 개발 PC 밖에서 재현하기 어렵고 장애 요청을 추적하기 어려움 | 다단계 Docker 이미지, Compose, 요청 ID, Actuator·Prometheus | 3개 컨테이너 health와 운영 프로필 실행 검증 |
+| 배포·관측 | 개발 PC 밖에서 재현하기 어렵고 장애 요청을 추적하기 어려움 | 다단계 Docker 이미지, Compose, 요청 ID, Actuator·Prometheus·Grafana | 5개 컨테이너 실행, Prometheus 타깃 UP, Grafana 대시보드 자동 등록 검증 |
 | 시연 준비 | 빈 서비스는 핵심 흐름을 보여주기 어려움 | 분야별 실패와 후속 기록 시연 데이터 구성 | 재실행 가능한 시드 스크립트 검증 |
+
+### 최종 고도화 결과
+
+- Access Token을 15분으로 줄이고 Refresh Token 원문 대신 SHA-256 해시를 저장했다.
+- Refresh Token을 요청마다 회전하고 재사용 탐지 시 같은 계열을 모두 폐기했다.
+- MySQL ngram FULLTEXT로 5만 건 본문 검색 평균을 `72.47ms`에서 `6.57ms`로 줄였다.
+- 관리자 운영 지표의 SQL을 `7개`에서 `2개`로 줄이고 평균 집계 시간을 `6.75ms`에서 `3.18ms`로 줄였다.
+- 로그인·회원가입·토큰 갱신·신고 API에 메모리 상한이 있는 요청 제한을 적용했다.
+- Prometheus 경보 3개와 Grafana 패널 6개를 Compose 프로필 하나로 재현했다.
+- 최종 기준 백엔드 37개 테스트와 프론트엔드 lint·production build가 통과했다.
 
 ---
 
@@ -291,7 +301,7 @@ H2 MySQL 호환 모드는 SQL 문법 일부를 확인할 수 있지만 InnoDB의
 
 **검증 결과**
 
-- 전체 16개 테스트 스위트의 자동 테스트 27개가 실패·오류 없이 통과했다.
+- 백엔드 자동 테스트 37개가 실패·오류 없이 통과했다.
 - 이 중 실제 MySQL 핵심 테스트 4개가 Flyway, 동시성, 운영 이력, 상태 정책, 목록 조회를 검증한다.
 - MySQL, Spring Boot, Next.js 세 컨테이너가 모두 `healthy` 상태인지 확인했다.
 - 운영 프로필에서 헬스 체크는 `200`, OpenAPI 경로는 `404`인지 확인했다.

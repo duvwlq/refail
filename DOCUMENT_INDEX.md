@@ -21,6 +21,9 @@
 - `AUTH_SECURITY.md`: JWT Access Token과 회전형 Refresh Token 보안 정책
 - `RATE_LIMIT_POLICY.md`: 로그인·회원가입·갱신·신고 API 요청 제한 정책
 - `OBSERVABILITY.md`: Prometheus·Grafana 대시보드, 경보와 관리 포트 보안 정책
+- `ARCHITECTURE.md`: 시스템 구조, JWT 수명주기, 공감·신고 동시성 흐름
+- `DEMO_SCENARIO.md`: 회원가입부터 관리자 처리까지 대표 시연 순서
+- `DEMO_VIDEO_SCRIPT.md`: 3~5분 포트폴리오 영상 대본과 촬영 체크리스트
 
 ## 품질과 운영
 
