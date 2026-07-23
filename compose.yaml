@@ -52,10 +52,12 @@ services:
       RATE_LIMIT_REPORT_WINDOW_SECONDS: ${RATE_LIMIT_REPORT_WINDOW_SECONDS:-3600}
       FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:3000}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+      MANAGEMENT_PORT: 9090
+      OBSERVABILITY_INTERNAL_METRICS: "true"
     ports:
       - "${BACKEND_PORT:-18080}:8080"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9090/actuator/health"]
       interval: 10s
       timeout: 3s
       retries: 20
@@ -81,5 +83,41 @@ services:
       timeout: 3s
       retries: 10
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["observability"]
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - refail-prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-19090}:9090"
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    profiles: ["observability"]
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - refail-grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-13000}:3000"
+
 volumes:
   refail-mysql-data:
+  refail-prometheus-data:
+  refail-grafana-data:

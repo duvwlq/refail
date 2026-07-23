@@ -1,0 +1,35 @@
+groups:
+  - name: refail-api
+    rules:
+      - alert: ReFailHighServerErrorRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{application="fail",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{application="fail"}[5m])), 0.001)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Re:Fail API 5xx 비율이 5%를 초과했습니다."
+
+      - alert: ReFailHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_server_requests_seconds_bucket{application="fail"}[5m]))
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Re:Fail API p95 응답 시간이 1초를 초과했습니다."
+
+      - alert: ReFailRateLimitSpike
+        expr: sum(increase(refail_rate_limit_exceeded_total{application="fail"}[5m])) > 20
+        for: 1m
+        labels:
+          severity: info
+        annotations:
+          summary: "5분 동안 요청 제한 초과가 20회 이상 발생했습니다."

@@ -71,8 +71,12 @@ app:
     report:
       limit: ${RATE_LIMIT_REPORT_LIMIT:5}
       window-seconds: ${RATE_LIMIT_REPORT_WINDOW_SECONDS:3600}
+  observability:
+    internal-metrics-enabled: ${OBSERVABILITY_INTERNAL_METRICS:false}
 
 management:
+  server:
+    port: ${MANAGEMENT_PORT:${server.port}}
   prometheus:
     metrics:
       export:
@@ -87,3 +91,6 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
