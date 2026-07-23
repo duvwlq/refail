@@ -30,6 +30,7 @@
 - `PERFORMANCE.md`: N+1 개선, 캐시, 인덱스, 측정 결과
 - `HARNESS.md`: 구현과 검증 시 지켜야 할 기준
 - `NEXT_WORK_PLAN.md`: 인증 수명주기, 검색 성능, 요청 제한, 관측성의 다음 단계 실행 계획
+- `REFACTORING_GOAL_PROMPT.md`: 전체 흐름 점검, 구조 리팩터링과 Playwright E2E까지 이어지는 목표 모드 프롬프트
 - `BACKEND_REVIEW_PROMPT.md`: 백엔드 포트폴리오의 부족한 점을 코드 근거로 점검하는 리뷰 프롬프트
 - `BACKEND_REVIEW_RESULT.md`: 리뷰 프롬프트를 실제 코드와 실행 API에 적용한 발견 사항과 우선순위
 
