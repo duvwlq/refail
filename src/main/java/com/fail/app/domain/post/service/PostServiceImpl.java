@@ -8,33 +8,25 @@ import com.fail.app.domain.post.dto.request.CreatePostRequest;
 import com.fail.app.domain.post.dto.request.CreatePostUpdateRequest;
 import com.fail.app.domain.post.dto.request.UpdatePostRequest;
 import com.fail.app.domain.post.dto.response.PostDetailResponse;
+import com.fail.app.domain.post.dto.response.PostOwnershipResponse;
 import com.fail.app.domain.post.dto.response.PostSummaryResponse;
 import com.fail.app.domain.post.dto.response.PostUpdateResponse;
-import com.fail.app.domain.post.dto.response.PostOwnershipResponse;
-import com.fail.app.domain.post.entity.Post;
-import com.fail.app.domain.post.entity.PostUpdate;
-import com.fail.app.domain.post.entity.PostSortType;
 import com.fail.app.domain.post.entity.FailureSize;
+import com.fail.app.domain.post.entity.Post;
+import com.fail.app.domain.post.entity.PostSortType;
+import com.fail.app.domain.post.entity.PostUpdate;
 import com.fail.app.domain.post.repository.PostRepository;
 import com.fail.app.domain.post.repository.PostUpdateRepository;
 import com.fail.app.domain.user.entity.User;
 import com.fail.app.domain.user.policy.UserAccessPolicy;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageImpl;
 
 @Service
 @RequiredArgsConstructor
@@ -45,9 +37,8 @@ public class PostServiceImpl implements PostService {
     private final PostUpdateRepository postUpdateRepository;
     private final UserAccessPolicy userAccessPolicy;
     private final CategoryRepository categoryRepository;
-
-    @Value("${app.search.fulltext-enabled:false}")
-    private boolean fullTextSearchEnabled;
+    private final PostQueryService postQueryService;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -73,94 +64,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Page<PostSummaryResponse> getPosts(Long categoryId, FailureSize failureSize, String keyword, PostSortType sortType, Pageable pageable) {
-        if (shouldUseFullText(keyword)) {
-            return searchFullText(categoryId, failureSize, keyword.trim(), sortType, pageable);
-        }
-
-        Sort sort = sortType == PostSortType.POPULAR
-                ? Sort.by(Sort.Order.desc("reactionCount"), Sort.Order.desc("createdAt"))
-                : Sort.by(Sort.Order.desc("createdAt"));
-        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
-
-        Specification<Post> visiblePosts = (root, query, builder) -> builder.and(
-                builder.isNull(root.get("deletedAt")),
-                builder.isFalse(root.get("hidden"))
-        );
-        if (categoryId != null) {
-            visiblePosts = visiblePosts.and(
-                    (root, query, builder) -> builder.equal(root.get("category").get("id"), categoryId)
-            );
-        }
-        if (failureSize != null) {
-            visiblePosts = visiblePosts.and((root, query, builder) -> builder.equal(root.get("failureSize"), failureSize));
-        }
-        if (keyword != null && !keyword.isBlank()) {
-            String pattern = "%" + keyword.trim().toLowerCase() + "%";
-            visiblePosts = visiblePosts.and((root, query, builder) -> builder.or(
-                    builder.like(builder.lower(root.get("title")), pattern),
-                    builder.like(builder.lower(root.get("content")), pattern),
-                    builder.like(builder.lower(root.get("emotionTag")), pattern)
-            ));
-        }
-
-        Page<Post> posts = postRepository.findAll(visiblePosts, sortedPageable);
-        List<Long> postIds = posts.getContent().stream().map(Post::getId).toList();
-        Set<Long> postIdsWithUpdates = postIds.isEmpty()
-                ? Set.of()
-                : postUpdateRepository.findPostIdsWithUpdates(postIds);
-
-        return posts.map(post -> PostSummaryResponse.of(post, postIdsWithUpdates.contains(post.getId())));
-    }
-
-    private Page<PostSummaryResponse> searchFullText(
-            Long categoryId,
-            FailureSize failureSize,
-            String keyword,
-            PostSortType sortType,
-            Pageable pageable
-    ) {
-        List<Long> ids = postRepository.searchFullTextIds(
-                categoryId,
-                failureSize == null ? null : failureSize.name(),
-                keyword,
-                sortType.name(),
-                pageable.getPageSize(),
-                pageable.getOffset()
-        );
-        long total = postRepository.countFullText(
-                categoryId,
-                failureSize == null ? null : failureSize.name(),
-                keyword
-        );
-        if (ids.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, total);
-        }
-
-        Map<Long, Post> postsById = postRepository.findAllByIdIn(ids).stream()
-                .collect(Collectors.toMap(Post::getId, Function.identity()));
-        List<Post> orderedPosts = ids.stream().map(postsById::get).toList();
-        Set<Long> postIdsWithUpdates = postUpdateRepository.findPostIdsWithUpdates(ids);
-        List<PostSummaryResponse> content = orderedPosts.stream()
-                .map(post -> PostSummaryResponse.of(post, postIdsWithUpdates.contains(post.getId())))
-                .toList();
-        return new PageImpl<>(content, pageable, total);
-    }
-
-    private boolean shouldUseFullText(String keyword) {
-        return fullTextSearchEnabled && keyword != null && keyword.trim().length() >= 2;
+        return postQueryService.getPosts(categoryId, failureSize, keyword, sortType, pageable);
     }
 
     @Override
     public Page<PostSummaryResponse> getMyPosts(Long userId, Pageable pageable) {
-        getActiveUser(userId);
-        Specification<Post> mine = (root, query, builder) -> builder.and(
-                builder.equal(root.get("user").get("id"), userId),
-                builder.isNull(root.get("deletedAt"))
-        );
-        Page<Post> posts = postRepository.findAll(mine, pageable);
-        List<Long> ids = posts.getContent().stream().map(Post::getId).toList();
-        Set<Long> withUpdates = ids.isEmpty() ? Set.of() : postUpdateRepository.findPostIdsWithUpdates(ids);
-        return posts.map(post -> PostSummaryResponse.of(post, withUpdates.contains(post.getId())));
+        return postQueryService.getMyPosts(userId, pageable);
     }
 
     @Override
@@ -204,7 +113,7 @@ public class PostServiceImpl implements PostService {
         User user = getActiveUser(userId);
         Post post = getPostEntity(postId);
         validateOwnership(user, post);
-        post.softDelete(LocalDateTime.now());
+        post.softDelete(LocalDateTime.now(clock));
     }
 
     @Override
@@ -241,7 +150,7 @@ public class PostServiceImpl implements PostService {
         User user = getActiveUser(userId);
         Post post = getPostEntity(postId);
         validateOwnership(user, post);
-        getPostUpdate(postId, updateId).softDelete(LocalDateTime.now());
+        getPostUpdate(postId, updateId).softDelete(LocalDateTime.now(clock));
     }
 
     @Override

@@ -23,7 +23,8 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 @EnableConfigurationProperties({
         JwtProperties.class,
         RateLimitProperties.class,
-        ObservabilityProperties.class
+        ObservabilityProperties.class,
+        SearchProperties.class
 })
 public class SecurityConfig {
 
