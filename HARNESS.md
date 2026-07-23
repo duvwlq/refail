@@ -206,3 +206,7 @@
 - 운영 프로필에서 Swagger는 기본 비활성화한다.
 - 공감·신고 동시성, Flyway, 사용자·카테고리 정책은 Testcontainers MySQL 8.4로 자동 검증한다.
 - Docker Compose 실행 시 비밀번호와 JWT 시크릿은 `.env`로 주입하고 이미지나 저장소에 포함하지 않는다.
+- Access Token 기본 유효시간은 15분으로 유지한다.
+- Refresh Token 원문은 저장하지 않고 SHA-256 해시만 저장한다.
+- Refresh Token은 매 갱신 시 회전하며 로그아웃·사용자 제한 시 폐기한다.
+- 로컬 HTTP에서는 Refresh 쿠키의 `Secure`를 끄고 HTTPS 운영 환경에서는 반드시 켠다.

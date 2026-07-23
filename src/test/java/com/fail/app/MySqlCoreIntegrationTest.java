@@ -7,6 +7,8 @@ import com.fail.app.common.exception.ApiException;
 import com.fail.app.common.exception.ErrorCode;
 import com.fail.app.domain.admin.dto.request.AdminActionRequest;
 import com.fail.app.domain.admin.service.AdminService;
+import com.fail.app.domain.auth.repository.RefreshTokenRepository;
+import com.fail.app.domain.auth.service.RefreshTokenService;
 import com.fail.app.domain.category.entity.Category;
 import com.fail.app.domain.category.repository.CategoryRepository;
 import com.fail.app.domain.moderation.entity.ModerationActionType;
@@ -89,6 +91,12 @@ class MySqlCoreIntegrationTest extends MySqlContainerIntegrationSupport {
     @Autowired
     private AdminService adminService;
 
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
     @Test
     void flywayCreatesAndValidatesTheSchemaOnMySql() throws Exception {
         try (Connection connection = dataSource.getConnection()) {
@@ -98,7 +106,44 @@ class MySqlCoreIntegrationTest extends MySqlContainerIntegrationSupport {
                 "select count(*) from flyway_schema_history where success = 1",
                 Integer.class
         );
-        assertThat(appliedMigrations).isGreaterThanOrEqualTo(5);
+        assertThat(appliedMigrations).isGreaterThanOrEqualTo(6);
+    }
+
+    @Test
+    void concurrentRefreshRequestsLeaveOneActiveTokenOnMySql() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        User user = saveUser(
+                "mysql-refresh-" + suffix + "@example.com",
+                "mysql-refresh-" + suffix,
+                UserStatus.ACTIVE
+        );
+        var issued = refreshTokenService.issue(user);
+        String familyId = refreshTokenRepository.findTopByUserIdOrderByIdDesc(user.getId())
+                .orElseThrow()
+                .getFamilyId();
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<ErrorCode>> results = List.of(
+                    executor.submit(() -> rotateAfterStart(start, issued.rawToken())),
+                    executor.submit(() -> rotateAfterStart(start, issued.rawToken()))
+            );
+            start.countDown();
+
+            List<ErrorCode> errors = new ArrayList<>();
+            for (Future<ErrorCode> result : results) {
+                ErrorCode error = result.get();
+                if (error != null) {
+                    errors.add(error);
+                }
+            }
+
+            assertThat(errors).containsExactly(ErrorCode.REFRESH_TOKEN_ALREADY_ROTATED);
+            assertThat(refreshTokenRepository.countByFamilyIdAndRevokedAtIsNull(familyId)).isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test
@@ -222,6 +267,16 @@ class MySqlCoreIntegrationTest extends MySqlContainerIntegrationSupport {
         assertThatThrownBy(action::run)
                 .isInstanceOfSatisfying(ApiException.class,
                         exception -> assertThat(exception.getErrorCode()).isEqualTo(errorCode));
+    }
+
+    private ErrorCode rotateAfterStart(CountDownLatch start, String refreshToken) throws InterruptedException {
+        start.await();
+        try {
+            refreshTokenService.rotate(refreshToken);
+            return null;
+        } catch (ApiException exception) {
+            return exception.getErrorCode();
+        }
     }
 
     private User saveAdmin(String email, String nickname) {

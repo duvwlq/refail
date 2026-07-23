@@ -19,8 +19,9 @@ server:
 
 jwt:
   secret: local-only-jwt-secret-key-should-be-long-enough-2026
-  access-token-validity-seconds: 86400
+  access-token-validity-seconds: 900
   issuer: fail-local
+  refresh-cookie-secure: false
 
 springdoc:
   api-docs:

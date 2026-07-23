@@ -9,6 +9,7 @@ server:
 
 jwt:
   secret: ${JWT_SECRET}
+  refresh-cookie-secure: ${JWT_REFRESH_COOKIE_SECURE:false}
 
 springdoc:
   api-docs:

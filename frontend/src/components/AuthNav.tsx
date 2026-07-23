@@ -10,6 +10,15 @@ import styles from "./AuthNav.module.css";
 export function AuthNav() {
   const [user, setUser] = useState<AuthUser | null>(null);
 
+  async function logout() {
+    try {
+      await apiFetch("/api/v1/auth/logout", { method: "POST" });
+    } finally {
+      clearAuth();
+      setUser(null);
+    }
+  }
+
   useEffect(() => {
     async function loadUser() {
       const token = getAccessToken();
@@ -41,7 +50,7 @@ export function AuthNav() {
       {user ? (
         <>
           <span className={styles.user}>{user.nickname}</span>
-          <button type="button" onClick={() => clearAuth()}>로그아웃</button>
+          <button type="button" onClick={() => void logout()}>로그아웃</button>
         </>
       ) : (
         <Link href="/login">로그인</Link>

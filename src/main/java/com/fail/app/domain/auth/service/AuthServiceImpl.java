@@ -26,6 +26,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserAccessPolicy userAccessPolicy;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     @Transactional
@@ -49,7 +50,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public LoginResponse login(LoginRequest request) {
+    @Transactional
+    public IssuedAuthSession login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new ApiException(ErrorCode.INVALID_CREDENTIALS));
 
@@ -58,15 +60,33 @@ public class AuthServiceImpl implements AuthService {
         }
         userAccessPolicy.validateActive(user);
 
-        return new LoginResponse(
+        var issuedRefreshToken = refreshTokenService.issue(user);
+        return new IssuedAuthSession(new LoginResponse(
                 jwtTokenProvider.createAccessToken(user),
                 "Bearer",
                 AuthUserResponse.from(user)
-        );
+        ), issuedRefreshToken.rawToken(), issuedRefreshToken.maxAge());
     }
 
     @Override
     public AuthUserResponse getCurrentUser(Long userId) {
         return AuthUserResponse.from(userAccessPolicy.getActiveUser(userId));
+    }
+
+    @Override
+    @Transactional
+    public IssuedAuthSession refresh(String refreshToken) {
+        var rotated = refreshTokenService.rotate(refreshToken);
+        return new IssuedAuthSession(new LoginResponse(
+                jwtTokenProvider.createAccessToken(rotated.user()),
+                "Bearer",
+                AuthUserResponse.from(rotated.user())
+        ), rotated.rawToken(), rotated.maxAge());
+    }
+
+    @Override
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenService.logout(refreshToken);
     }
 }

@@ -37,8 +37,9 @@
 ```
 
 ### 인증 방식
-- MVP 기준으로 세션 또는 JWT 중 하나를 선택 가능
-- 이 문서에서는 `Authorization: Bearer <token>` 기준으로 서술
+- Access Token은 `Authorization: Bearer <token>`으로 전달
+- Refresh Token은 `HttpOnly`, `SameSite=Lax` 쿠키로 전달
+- Access Token 만료 시 `/api/v1/auth/refresh`에서 Refresh Token을 회전
 
 ### 권한 구분
 - `PUBLIC`: 비로그인 가능
@@ -172,7 +173,32 @@
 - `INVALID_CREDENTIALS`
 - `USER_RESTRICTED`
 
-### 4-3. 내 정보 조회
+### 4-3. 토큰 갱신
+
+- Method: `POST`
+- Path: `/api/v1/auth/refresh`
+- 권한: `PUBLIC`이지만 Refresh Token 쿠키 필요
+
+응답은 로그인 응답과 동일하며 새 Access Token과 회전된 Refresh Token 쿠키를 반환한다.
+
+주요 에러
+- `AUTH_004`: Refresh Token 쿠키 없음
+- `AUTH_005`: 이미 회전된 토큰의 동시 재요청
+- `AUTH_006`: 만료·위조·알 수 없는 Refresh Token
+- `AUTH_007`: 폐기 토큰 재사용 탐지
+- `USER_RESTRICTED`
+- `USER_DELETED`
+
+### 4-4. 로그아웃
+
+- Method: `POST`
+- Path: `/api/v1/auth/logout`
+- 권한: `PUBLIC`
+- 응답: `204 No Content`
+
+현재 Refresh Token을 폐기하고 쿠키를 제거한다.
+
+### 4-5. 내 정보 조회
 
 - Method: `GET`
 - Path: `/api/v1/auth/me`

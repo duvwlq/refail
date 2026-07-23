@@ -16,8 +16,11 @@ spring:
 
 jwt:
   secret: fail-project-jwt-secret-key-should-be-long-enough-2026
-  access-token-validity-seconds: 86400
+  access-token-validity-seconds: 900
   issuer: fail-test
+  refresh-token-validity-seconds: 2592000
+  refresh-reuse-grace-seconds: 5
+  refresh-cookie-secure: false
 
 management:
   prometheus:

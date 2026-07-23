@@ -25,6 +25,7 @@ import com.fail.app.domain.category.repository.CategoryRepository;
 import com.fail.app.domain.admin.dto.response.OperationMetricsResponse;
 import com.fail.app.domain.post.repository.PostUpdateRepository;
 import com.fail.app.domain.post.entity.PostUpdateStatus;
+import com.fail.app.domain.auth.service.RefreshTokenService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -45,6 +46,7 @@ public class AdminServiceImpl implements AdminService {
     private final CategoryRepository categoryRepository;
     private final PostUpdateRepository postUpdateRepository;
     private final UserAccessPolicy userAccessPolicy;
+    private final RefreshTokenService refreshTokenService;
 
     @Override
     public Page<AdminReportResponse> getReports(Long adminUserId, ReportStatus status, Pageable pageable) {
@@ -90,6 +92,7 @@ public class AdminServiceImpl implements AdminService {
         User user = getUser(userId);
         LocalDateTime now = LocalDateTime.now();
         user.restrict();
+        refreshTokenService.revokeAllForUser(userId);
         saveModerationAction(admin, ModerationTargetType.USER, userId, ModerationActionType.RESTRICT_USER, request.reason());
         return new AdminActionResponse(userId, false, user.getStatus().name(), now);
     }

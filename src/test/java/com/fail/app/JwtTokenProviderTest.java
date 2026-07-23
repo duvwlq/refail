@@ -16,8 +16,12 @@ class JwtTokenProviderTest {
 
     @Test
     void 설정된_issuer와_다른_토큰은_거부한다() throws Exception {
-        JwtTokenProvider issuerA = new JwtTokenProvider(new JwtProperties(SECRET, 60, "issuer-a"));
-        JwtTokenProvider issuerB = new JwtTokenProvider(new JwtProperties(SECRET, 60, "issuer-b"));
+        JwtTokenProvider issuerA = new JwtTokenProvider(new JwtProperties(
+                SECRET, 60, "issuer-a", 3600, 5, false
+        ));
+        JwtTokenProvider issuerB = new JwtTokenProvider(new JwtProperties(
+                SECRET, 60, "issuer-b", 3600, 5, false
+        ));
         User user = User.builder()
                 .email("jwt@example.com")
                 .passwordHash("hash")

@@ -9,7 +9,11 @@ public interface AuthService {
 
     AuthUserResponse signup(SignupRequest request);
 
-    LoginResponse login(LoginRequest request);
+    IssuedAuthSession login(LoginRequest request);
 
     AuthUserResponse getCurrentUser(Long userId);
+
+    IssuedAuthSession refresh(String refreshToken);
+
+    void logout(String refreshToken);
 }
