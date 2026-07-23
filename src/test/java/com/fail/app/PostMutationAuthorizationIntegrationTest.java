@@ -50,7 +50,7 @@ class PostMutationAuthorizationIntegrationTest {
         String authorToken = signupAndLogin("author@example.com", "작성자");
         String otherToken = signupAndLogin("other@example.com", "다른사용자");
         Long postId = createPost(authorToken, category.getId());
-        createPostUpdate(authorToken, postId);
+        Long updateId = createPostUpdate(authorToken, postId);
         String updateBody = updateBody(category.getId());
 
         mockMvc.perform(get("/api/v1/posts/{postId}/ownership", postId)
@@ -84,6 +84,40 @@ class PostMutationAuthorizationIntegrationTest {
                 .andExpect(jsonPath("$.title").value("수정된 실패 기록"))
                 .andExpect(jsonPath("$.failureSize").value("MEDIUM"))
                 .andExpect(jsonPath("$.retryIntention").value(false));
+
+        String postUpdateBody = """
+                {"status":"IMPROVING","content":"조금씩 나아지고 있다."}
+                """;
+        mockMvc.perform(patch("/api/v1/posts/{postId}/updates/{updateId}", postId, updateId)
+                        .header("Authorization", "Bearer " + otherToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(postUpdateBody))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AUTH_002"));
+
+        mockMvc.perform(patch("/api/v1/posts/{postId}/updates/{updateId}", postId, updateId)
+                        .header("Authorization", "Bearer " + authorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(postUpdateBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IMPROVING"))
+                .andExpect(jsonPath("$.content").value("조금씩 나아지고 있다."));
+
+        mockMvc.perform(delete("/api/v1/posts/{postId}/updates/{updateId}", postId, updateId)
+                        .header("Authorization", "Bearer " + otherToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AUTH_002"));
+
+        mockMvc.perform(delete("/api/v1/posts/{postId}/updates/{updateId}", postId, updateId)
+                        .header("Authorization", "Bearer " + authorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updateId").value(updateId))
+                .andExpect(jsonPath("$.deleted").value(true));
+
+        mockMvc.perform(get("/api/v1/posts/{postId}/updates", postId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        createPostUpdate(authorToken, postId);
 
         mockMvc.perform(delete("/api/v1/posts/{postId}", postId)
                         .header("Authorization", "Bearer " + otherToken))
@@ -145,12 +179,14 @@ class PostMutationAuthorizationIntegrationTest {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("postId").asLong();
     }
 
-    private void createPostUpdate(String token, Long postId) throws Exception {
-        mockMvc.perform(post("/api/v1/posts/{postId}/updates", postId)
+    private Long createPostUpdate(String token, Long postId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/posts/{postId}/updates", postId)
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"TRYING_AGAIN\",\"content\":\"다시 시도한다.\"}"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andReturn();
+        return objectMapper.readTree(result.getResponse().getContentAsString()).get("updateId").asLong();
     }
 
     private String updateBody(Long categoryId) {

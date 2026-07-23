@@ -60,6 +60,10 @@ class RequestObservabilityIntegrationTest {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
+        mockMvc.perform(get("/actuator/metrics/http.server.requests"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(get("/actuator/metrics/http.server.requests")
                         .header("Authorization", authorization))
                 .andExpect(status().isOk())

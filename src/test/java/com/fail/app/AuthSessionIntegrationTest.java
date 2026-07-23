@@ -104,6 +104,55 @@ class AuthSessionIntegrationTest {
                 .andExpect(jsonPath("$.code").value("AUTH_004"));
     }
 
+    @Test
+    void signupRejectsDuplicateIdentityAndLoginRejectsInvalidCredentials() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "identity@example.com",
+                                  "password": "password123",
+                                  "nickname": "identity-user"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "identity@example.com",
+                                  "password": "password123",
+                                  "nickname": "another-user"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("USER_003"));
+
+        mockMvc.perform(post("/api/v1/auth/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "another@example.com",
+                                  "password": "password123",
+                                  "nickname": "identity-user"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("USER_004"));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "identity@example.com",
+                                  "password": "wrong-password"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTH_003"));
+    }
+
     private org.springframework.test.web.servlet.ResultActions login() throws Exception {
         return mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
