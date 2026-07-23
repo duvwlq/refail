@@ -2,24 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
-import { getAccessToken } from "@/lib/auth";
-import type { PageResponse, PostSummary } from "@/types/post";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getMyPosts } from "@/lib/api/posts";
+import type { PostSummary } from "@/types/post";
 import styles from "./page.module.css";
 
 export default function MyRecordsPage() {
-  const router = useRouter();
+  const auth = useRequireAuth();
   const [posts, setPosts] = useState<PostSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = getAccessToken();
-    if (!token) { router.replace("/login"); return; }
-    apiFetch<PageResponse<PostSummary>>("/api/v1/posts/me?page=0&size=100", { token })
+    if (!auth.ready || !auth.token) return;
+    getMyPosts(auth.token)
       .then((page) => setPosts(page.content))
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [auth.ready, auth.token]);
 
   return <main className={styles.page}>
     <header><Link href="/" className={styles.brand}>Re:<span>Fail</span></Link><Link href="/posts/new">새 기록</Link></header>

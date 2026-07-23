@@ -4,14 +4,24 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkdownContent } from "@/components/markdown/MarkdownContent";
-import { ApiError, apiFetch } from "@/lib/api";
+import { useAccessTokenAction } from "@/hooks/useAccessTokenAction";
+import { ApiError } from "@/lib/api";
+import {
+  deletePost,
+  deletePostUpdate,
+  getMyReaction,
+  getPostOwnership,
+  getReactionSummary,
+  removeReaction,
+  reportPost,
+  savePostUpdate,
+  setReaction,
+  type ReactionType,
+  type ReportReason,
+} from "@/lib/api/posts";
 import { getAccessToken } from "@/lib/auth";
-import type { PostDetail, PostOwnership, ReactionState, PostUpdate } from "@/types/post";
+import type { PostDetail, PostUpdate } from "@/types/post";
 import styles from "./PostDetailView.module.css";
-
-type ReactionType = "ME_TOO" | "SEND_SUPPORT" | "THANKS_FOR_SHARING" | "CHEERING_NEXT_TRY";
-type ReportReason = "ABUSE" | "HATE" | "SPAM" | "PRIVACY" | "OTHER";
-type ReactionCount = { reactionType: ReactionType; count: number };
 
 const reactions: { type: ReactionType; label: string }[] = [
   { type: "ME_TOO", label: "나도 그랬어요" },
@@ -29,6 +39,7 @@ function formatDate(value: string) {
 
 export function PostDetailView({ post }: { post: PostDetail }) {
   const router = useRouter();
+  const requireToken = useAccessTokenAction();
   const [selectedReaction, setSelectedReaction] = useState<ReactionType | null>(null);
   const [reactionCount, setReactionCount] = useState(post.reactionCount);
   const [reactionPending, setReactionPending] = useState(false);
@@ -51,24 +62,18 @@ export function PostDetailView({ post }: { post: PostDetail }) {
 
   useEffect(() => {
     const token = getAccessToken();
-    apiFetch<ReactionCount[]>(`/api/v1/posts/${post.postId}/reaction/summary`)
+    getReactionSummary(post.postId)
       .then((items) => setReactionCounts(Object.fromEntries(items.map((item) => [item.reactionType, item.count]))));
     if (!token) return;
 
-    apiFetch<PostOwnership>(`/api/v1/posts/${post.postId}/ownership`, { token })
+    getPostOwnership(post.postId, token)
       .then((ownership) => setOwnedByMe(ownership.ownedByMe))
       .catch(() => setOwnedByMe(false));
-    apiFetch<ReactionState>(`/api/v1/posts/${post.postId}/reaction`, { token })
+    getMyReaction(post.postId, token)
       .then((reaction) => setSelectedReaction(reaction.applied ? reaction.reactionType : null))
       .catch(() => setSelectedReaction(null));
   }, [post.postId]);
   const orderedReactions = [...reactions].sort((a, b) => reactionPriority(a.type, post.retryIntention) - reactionPriority(b.type, post.retryIntention));
-
-  function requireToken() {
-    const token = getAccessToken();
-    if (!token) router.push("/login");
-    return token;
-  }
 
   async function handleReaction(type: ReactionType) {
     const token = requireToken();
@@ -77,13 +82,11 @@ export function PostDetailView({ post }: { post: PostDetail }) {
     setReactionMessage("");
     try {
       if (selectedReaction === type) {
-        await apiFetch(`/api/v1/posts/${post.postId}/reaction`, { method: "DELETE", token });
+        await removeReaction(post.postId, token);
         setSelectedReaction(null);
         setReactionCount((count) => Math.max(0, count - 1));
       } else {
-        await apiFetch(`/api/v1/posts/${post.postId}/reaction`, {
-          method: "PUT", token, body: JSON.stringify({ reactionType: type }),
-        });
+        await setReaction(post.postId, type, token);
         if (!selectedReaction) setReactionCount((count) => count + 1);
         setSelectedReaction(type);
       }
@@ -99,7 +102,7 @@ export function PostDetailView({ post }: { post: PostDetail }) {
     if (!token || deletePending) return;
     setDeletePending(true);
     try {
-      await apiFetch(`/api/v1/posts/${post.postId}`, { method: "DELETE", token });
+      await deletePost(post.postId, token);
       router.push("/");
       router.refresh();
     } catch (error) {
@@ -115,8 +118,12 @@ export function PostDetailView({ post }: { post: PostDetail }) {
     if (!token) return;
     setUpdatePending(true);
     try {
-      const path = editingUpdateId ? `/api/v1/posts/${post.postId}/updates/${editingUpdateId}` : `/api/v1/posts/${post.postId}/updates`;
-      const saved = await apiFetch<PostUpdate>(path, { method: editingUpdateId ? "PATCH" : "POST", token, body: JSON.stringify({ status: updateStatus, content: updateContent }) });
+      const saved = await savePostUpdate(
+        post.postId,
+        editingUpdateId,
+        { status: updateStatus, content: updateContent },
+        token,
+      );
       setUpdates((items) => editingUpdateId ? items.map((item) => item.updateId === saved.updateId ? saved : item) : [...items, saved]);
       setUpdateContent(""); setEditingUpdateId(null); setUpdateOpen(false);
     } finally { setUpdatePending(false); }
@@ -128,7 +135,7 @@ export function PostDetailView({ post }: { post: PostDetail }) {
 
   async function deleteUpdate(updateId: number) {
     const token = requireToken(); if (!token) return;
-    await apiFetch(`/api/v1/posts/${post.postId}/updates/${updateId}`, { method: "DELETE", token });
+    await deletePostUpdate(post.postId, updateId, token);
     setUpdates((items) => items.filter((item) => item.updateId !== updateId));
   }
 
@@ -139,10 +146,11 @@ export function PostDetailView({ post }: { post: PostDetail }) {
     setReportPending(true);
     setReportMessage("");
     try {
-      await apiFetch(`/api/v1/posts/${post.postId}/reports`, {
-        method: "POST", token,
-        body: JSON.stringify({ reasonType: reportReason, reasonDetail: reportDetail.trim() || null }),
-      });
+      await reportPost(
+        post.postId,
+        { reasonType: reportReason, reasonDetail: reportDetail.trim() || null },
+        token,
+      );
       setReportMessage("신고가 접수되었습니다. 운영자가 확인할게요.");
     } catch (error) {
       setReportMessage(error instanceof ApiError ? error.message : "신고를 접수하지 못했습니다.");

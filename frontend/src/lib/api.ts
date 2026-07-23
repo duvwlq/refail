@@ -16,6 +16,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly retryAfterSeconds: number | null = null,
   ) {
     super(message);
   }
@@ -56,10 +57,15 @@ export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Prom
 
   if (!response.ok) {
     const error = await response.json().catch(() => null);
+    const retryAfterSeconds = parseRetryAfter(response.headers.get("Retry-After"));
+    const message = error?.message ?? "요청을 처리하지 못했습니다.";
     throw new ApiError(
       response.status,
       error?.code ?? "UNKNOWN_ERROR",
-      error?.message ?? "요청을 처리하지 못했습니다.",
+      response.status === 429 && retryAfterSeconds !== null
+        ? `${message} ${retryAfterSeconds}초 후 다시 시도해 주세요.`
+        : message,
+      retryAfterSeconds,
     );
   }
 
@@ -76,6 +82,16 @@ function canRefresh(path: string): boolean {
     "/api/v1/auth/refresh",
     "/api/v1/auth/logout",
   ].includes(path);
+}
+
+function parseRetryAfter(value: string | null): number | null {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, Math.ceil(seconds));
+
+  const retryAt = Date.parse(value);
+  if (Number.isNaN(retryAt)) return null;
+  return Math.max(0, Math.ceil((retryAt - Date.now()) / 1000));
 }
 
 function refreshAccessToken(): Promise<string> {

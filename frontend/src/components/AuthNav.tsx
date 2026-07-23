@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { getCurrentUser, logout as requestLogout } from "@/lib/api/auth";
 import { AUTH_CHANGED_EVENT, clearAuth, getAccessToken } from "@/lib/auth";
 import type { AuthUser } from "@/types/auth";
 import styles from "./AuthNav.module.css";
@@ -12,7 +12,7 @@ export function AuthNav() {
 
   async function logout() {
     try {
-      await apiFetch("/api/v1/auth/logout", { method: "POST" });
+      await requestLogout();
     } finally {
       clearAuth();
       setUser(null);
@@ -27,7 +27,7 @@ export function AuthNav() {
         return;
       }
       try {
-        setUser(await apiFetch<AuthUser>("/api/v1/auth/me", { token }));
+        setUser(await getCurrentUser(token));
       } catch {
         clearAuth();
         setUser(null);

@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostForm } from "@/components/post/PostForm";
-import { apiFetch } from "@/lib/api";
+import { getPost } from "@/lib/api/posts";
 import type { PostDetail } from "@/types/post";
 import styles from "./page.module.css";
 
-async function getPost(postId: string): Promise<PostDetail | null> {
+async function loadPost(postId: string): Promise<PostDetail | null> {
   try {
-    return await apiFetch<PostDetail>(`/api/v1/posts/${postId}`, { cache: "no-store" });
+    return await getPost(Number(postId), { cache: "no-store" });
   } catch {
     return null;
   }
@@ -16,7 +16,7 @@ async function getPost(postId: string): Promise<PostDetail | null> {
 export default async function EditPostPage({ params }: { params: Promise<{ postId: string }> }) {
   const { postId } = await params;
   if (!/^\d+$/.test(postId)) notFound();
-  const post = await getPost(postId);
+  const post = await loadPost(postId);
   if (!post) notFound();
 
   return (

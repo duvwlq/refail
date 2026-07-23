@@ -3,9 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkdownEditor } from "@/components/markdown/MarkdownEditor";
-import { ApiError, apiFetch } from "@/lib/api";
-import { getAccessToken } from "@/lib/auth";
-import type { Category, CreatedPost, PostDetail, PostOwnership } from "@/types/post";
+import { usePostDraft } from "@/hooks/usePostDraft";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { ApiError } from "@/lib/api";
+import { getCategories } from "@/lib/api/categories";
+import {
+  createPost,
+  getPostOwnership,
+  updatePost,
+  type PostWritePayload,
+} from "@/lib/api/posts";
+import type { Category, PostDetail } from "@/types/post";
 import styles from "./PostForm.module.css";
 
 type Choice<T extends string> = { value: T; title: string; description: string };
@@ -28,6 +36,7 @@ const adviceChoices: Choice<"COMFORT" | "ADVICE_OK">[] = [
 
 export function PostForm({ initialPost }: { initialPost?: PostDetail }) {
   const router = useRouter();
+  const auth = useRequireAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState(initialPost ? String(initialPost.categoryId) : "");
   const [title, setTitle] = useState(initialPost?.title ?? "");
@@ -38,72 +47,52 @@ export function PostForm({ initialPost }: { initialPost?: PostDetail }) {
   const [advicePreference, setAdvicePreference] = useState<"COMFORT" | "ADVICE_OK">(initialPost?.advicePreference ?? "COMFORT");
   const [retryIntention, setRetryIntention] = useState(initialPost?.retryIntention ?? true);
   const [nextAttemptPlan, setNextAttemptPlan] = useState(initialPost?.nextAttemptPlan ?? "");
-  const [authorized, setAuthorized] = useState(!initialPost);
-  const [draftReady, setDraftReady] = useState(false);
-  const [draftNotice, setDraftNotice] = useState("");
+  const [authorized, setAuthorized] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const draftKey = `refail.draft.${initialPost?.postId ?? "new"}`;
+  const draft = usePostDraft(
+    draftKey,
+    { title, content, emotionTag, nextAttemptPlan, failureSize, advicePreference, retryIntention },
+    (restored) => {
+      setTitle(restored.title);
+      setContent(restored.content);
+      setEmotionTag(restored.emotionTag);
+      setNextAttemptPlan(restored.nextAttemptPlan);
+      setFailureSize(restored.failureSize);
+      setAdvicePreference(restored.advicePreference);
+      setRetryIntention(restored.retryIntention);
+    },
+  );
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(draftKey);
-    if (raw) {
-      try {
-        const draft = JSON.parse(raw);
-        // localStorage is the source of truth for a recoverable browser draft.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTitle(draft.title ?? title); setContent(draft.content ?? content);
-        setEmotionTag(draft.emotionTag ?? emotionTag); setNextAttemptPlan(draft.nextAttemptPlan ?? nextAttemptPlan);
-        setFailureSize(draft.failureSize ?? failureSize); setAdvicePreference(draft.advicePreference ?? advicePreference);
-        setRetryIntention(draft.retryIntention ?? retryIntention);
-        setDraftNotice("자동 저장된 작성 내용을 복원했습니다.");
-      } catch { window.localStorage.removeItem(draftKey); }
-    }
-    setDraftReady(true);
-    // 최초 마운트에서만 저장된 초안을 복원합니다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftKey]);
+    if (!auth.ready || !auth.token) return;
+    const token = auth.token;
 
-  useEffect(() => {
-    if (!draftReady) return;
-    const timer = window.setTimeout(() => window.localStorage.setItem(draftKey, JSON.stringify({ title, content, emotionTag, nextAttemptPlan, failureSize, advicePreference, retryIntention })), 500);
-    return () => window.clearTimeout(timer);
-  }, [advicePreference, content, draftKey, draftReady, emotionTag, failureSize, nextAttemptPlan, retryIntention, title]);
-
-  useEffect(() => {
-    const token = getAccessToken();
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
     async function loadForm() {
       try {
-        const items = await apiFetch<Category[]>("/api/v1/categories");
+        const items = await getCategories();
         setCategories(items);
         if (!initialPost && items.length > 0) setCategoryId(String(items[0].categoryId));
 
         if (initialPost) {
-          const ownership = await apiFetch<PostOwnership>(`/api/v1/posts/${initialPost.postId}/ownership`, { token });
+          const ownership = await getPostOwnership(initialPost.postId, token);
           if (!ownership.ownedByMe) {
             router.replace(`/posts/${initialPost.postId}`);
             return;
           }
-          setAuthorized(true);
         }
+        setAuthorized(true);
       } catch {
         setError("게시글 정보를 불러오지 못했습니다.");
       }
     }
     void loadForm();
-  }, [initialPost, router]);
+  }, [auth.ready, auth.token, initialPost, router]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const token = getAccessToken();
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
+    if (!auth.token) return;
     if (!categoryId) {
       setError("카테고리를 선택해 주세요.");
       return;
@@ -112,17 +101,21 @@ export function PostForm({ initialPost }: { initialPost?: PostDetail }) {
     setError("");
     setPending(true);
     try {
-      const editableFields = {
-        categoryId: Number(categoryId), title, content, failureSize, emotionTag,
-        advicePreference, retryIntention, nextAttemptPlan: nextAttemptPlan.trim() || null,
+      const editableFields: PostWritePayload = {
+        categoryId: Number(categoryId),
+        title,
+        content,
+        failureSize,
+        emotionTag,
+        advicePreference,
+        retryIntention,
+        nextAttemptPlan: nextAttemptPlan.trim() || null,
       };
-      const saved = await apiFetch<CreatedPost>(initialPost ? `/api/v1/posts/${initialPost.postId}` : "/api/v1/posts", {
-        method: initialPost ? "PATCH" : "POST",
-        token,
-        body: JSON.stringify(initialPost ? editableFields : { ...editableFields, visibilityType }),
-      });
+      const saved = initialPost
+        ? await updatePost(initialPost.postId, editableFields, auth.token)
+        : await createPost({ ...editableFields, visibilityType }, auth.token);
       router.push(`/posts/${saved.postId}`);
-      window.localStorage.removeItem(draftKey);
+      draft.clear();
       router.refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "기록을 저장하지 못했습니다.");
@@ -164,7 +157,7 @@ export function PostForm({ initialPost }: { initialPost?: PostDetail }) {
         <div className={styles.markdownField}>
           <span>내용 <small>마크다운을 지원합니다</small></span>
           <div className={styles.writingGuide}><strong>작성 가이드</strong><span>무엇을 시도했나요?</span><span>어디에서 막혔나요?</span><span>무엇을 알게 되었나요?</span><span>다음에는 어떤 선택을 할까요?</span></div>
-          {draftNotice && <p className={styles.draftNotice}>{draftNotice}</p>}
+          {draft.notice && <p className={styles.draftNotice}>{draft.notice}</p>}
           <MarkdownEditor value={content} onChange={setContent} />
         </div>
       </section>

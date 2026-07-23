@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
-import type { Category, PageResponse, PostSummary } from "@/types/post";
 import { AuthNav } from "@/components/AuthNav";
+import { getCategories } from "@/lib/api/categories";
+import { searchPosts, type PostSearch } from "@/lib/api/posts";
+import type { PageResponse, PostSummary } from "@/types/post";
 import styles from "./page.module.css";
 
 const failureSizeLabel = {
@@ -10,25 +11,16 @@ const failureSizeLabel = {
   LARGE: "큰 실패",
 } as const;
 
-type Search = { sort?: string; categoryId?: string; failureSize?: string; keyword?: string; page?: string };
+type Search = PostSearch;
 
 async function getPosts(search: Search): Promise<{ result: PageResponse<PostSummary> | null; connected: boolean }> {
   try {
-    const query = new URLSearchParams({ sort: search.sort ?? "latest", page: search.page ?? "0", size: "6" });
-    if (search.categoryId) query.set("categoryId", search.categoryId);
-    if (search.failureSize) query.set("failureSize", search.failureSize);
-    if (search.keyword) query.set("keyword", search.keyword);
-    const response = await apiFetch<PageResponse<PostSummary>>(
-      `/api/v1/posts?${query}`,
-      { cache: "no-store" },
-    );
+    const response = await searchPosts(search, { cache: "no-store" });
     return { result: response, connected: true };
   } catch {
     return { result: null, connected: false };
   }
 }
-
-async function getCategories() { try { return await apiFetch<Category[]>("/api/v1/categories", { cache: "no-store" }); } catch { return []; } }
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -39,7 +31,10 @@ function formatDate(value: string): string {
 
 export default async function Home({ searchParams }: { searchParams: Promise<Search> }) {
   const search = await searchParams;
-  const [{ result, connected }, categories] = await Promise.all([getPosts(search), getCategories()]);
+  const [{ result, connected }, categories] = await Promise.all([
+    getPosts(search),
+    getCategories({ cache: "no-store" }).catch(() => []),
+  ]);
   const posts = result?.content ?? [];
 
   return (

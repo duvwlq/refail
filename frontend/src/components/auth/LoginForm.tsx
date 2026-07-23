@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, apiFetch } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { login } from "@/lib/api/auth";
 import { setAuth } from "@/lib/auth";
-import type { LoginResponse } from "@/types/auth";
 import styles from "./AuthForm.module.css";
 
 type LoginFormProps = {
@@ -25,10 +25,7 @@ export function LoginForm({ initialEmail = "", joined = false }: LoginFormProps)
     setError("");
     setPending(true);
     try {
-      const response = await apiFetch<LoginResponse>("/api/v1/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await login(email, password);
       setAuth(response.accessToken, response.user);
       router.push("/");
       router.refresh();

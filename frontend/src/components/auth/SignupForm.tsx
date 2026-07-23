@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, apiFetch } from "@/lib/api";
-import type { AuthUser } from "@/types/auth";
+import { ApiError } from "@/lib/api";
+import { signup } from "@/lib/api/auth";
 import styles from "./AuthForm.module.css";
 
 export function SignupForm() {
@@ -25,10 +25,7 @@ export function SignupForm() {
     }
     setPending(true);
     try {
-      await apiFetch<AuthUser>("/api/v1/auth/signup", {
-        method: "POST",
-        body: JSON.stringify({ email, password, nickname }),
-      });
+      await signup(email, password, nickname);
       router.push(`/login?joined=true&email=${encodeURIComponent(email)}`);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "회원가입 중 문제가 발생했습니다.");
