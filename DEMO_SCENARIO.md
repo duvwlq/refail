@@ -42,9 +42,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\seed-demo-data
 3. 5만 건 본문 검색 평균 `72.47ms → 6.57ms` 측정 결과를 보여준다.
 4. 관리자 지표 SQL `7개 → 2개` 개선 결과를 보여준다.
 5. Grafana에서 API 요청, p95 지연, JVM Heap, DB 풀을 보여준다.
-6. GitHub Actions의 백엔드 테스트와 프론트엔드 빌드 검증을 보여준다.
+6. GitHub Actions의 백엔드 테스트, 프론트엔드 빌드, Playwright P0 검증을 보여준다.
 
-## 5. 장애 추적 예시
+## 5. 자동화된 P0 시나리오
+
+| 시연 흐름 | Playwright 명세 |
+| --- | --- |
+| 공개 검색·카테고리 필터·상세 이동 | `frontend/e2e/public-exploration.spec.ts` |
+| 로그인·작성·수정·후속 기록·내 기록 | `frontend/e2e/auth-post-flow.spec.ts` |
+| 신고 확인·숨김·공개 제외·복구 | `frontend/e2e/admin-moderation.spec.ts` |
+
+## 6. 장애 추적 예시
 
 1. API 응답의 `X-Request-ID`를 확인한다.
 2. 같은 ID가 백엔드 로그에 기록되는 것을 확인한다.

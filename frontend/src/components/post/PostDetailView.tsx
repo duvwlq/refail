@@ -196,8 +196,8 @@ export function PostDetailView({ post }: { post: PostDetail }) {
         {ownedByMe && <section className={styles.updateComposer}>
           <div><div><span>GROWTH LOG</span><h2>그 후에는 어떻게 되었나요?</h2></div><button type="button" onClick={() => { setUpdateOpen((open) => !open); setEditingUpdateId(null); setUpdateContent(""); }}>후속 기록 작성</button></div>
           {updateOpen && <form onSubmit={saveUpdate}>
-            <select value={updateStatus} onChange={(event) => setUpdateStatus(event.target.value)}><option value="TRYING_AGAIN">다시 시도 중</option><option value="STILL_FAILING">잠시 멈춤</option><option value="IMPROVING">조금씩 나아지는 중</option><option value="SUCCEEDED">극복함</option></select>
-            <textarea required rows={5} value={updateContent} onChange={(event) => setUpdateContent(event.target.value)} placeholder="실패 이후 달라진 선택과 과정을 적어보세요." />
+            <select aria-label="후속 상태" value={updateStatus} onChange={(event) => setUpdateStatus(event.target.value)}><option value="TRYING_AGAIN">다시 시도 중</option><option value="STILL_FAILING">잠시 멈춤</option><option value="IMPROVING">조금씩 나아지는 중</option><option value="SUCCEEDED">극복함</option></select>
+            <textarea aria-label="후속 기록 내용" required rows={5} value={updateContent} onChange={(event) => setUpdateContent(event.target.value)} placeholder="실패 이후 달라진 선택과 과정을 적어보세요." />
             <button disabled={updatePending}>{updatePending ? "저장 중..." : editingUpdateId ? "수정 완료" : "후속 기록 남기기"}</button>
           </form>}
         </section>}

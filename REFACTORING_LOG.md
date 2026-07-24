@@ -150,3 +150,42 @@
 ### 다음 단계
 
 - Playwright P0 E2E 3개와 GitHub Actions 실행·artifact 보존을 구성한다.
+
+## 5단계: Playwright P0 E2E와 CI
+
+### 발견한 문제
+
+- API 통합 테스트는 개별 계약을 보호했지만 실제 브라우저의 로그인부터 후속 기록까지 이어지는 흐름은 자동화되지 않았다.
+- 내 기록 보관함이 백엔드 최대 페이지 크기 50을 넘는 `size=100`을 요청해 정상 작성 후에도 빈 상태처럼 보였다.
+- CI는 백엔드 테스트와 프론트엔드 정적 검증만 실행해 Compose 환경의 프론트엔드·백엔드 연결을 검증하지 않았다.
+- 프로덕션 의존성 감사에서 Next.js와 하위 PostCSS·Sharp의 high 취약점 3건이 확인됐다.
+
+### 선택한 변경
+
+- 공개 탐색, 작성자 CRUD·후속 기록, 관리자 신고 숨김·복구를 각각 독립된 P0 Playwright 명세로 만들었다.
+- 테스트마다 API로 고유 사용자를 생성하고 고정 관리자만 별도 스크립트로 승격해 병렬 실행 간 데이터 충돌을 막았다.
+- 내 기록 요청 크기를 서버 계약에 맞는 50으로 조정하고 조회 실패를 빈 목록과 구분해 표시했다.
+- GitHub Actions가 Chromium과 Compose 환경을 준비하고, 실패 시 trace·영상·스크린샷·서버 로그를 artifact로 남기도록 했다.
+- Next.js를 `16.2.11`로 올리고 PostCSS `8.5.22`, Sharp `0.35.3`을 고정해 프로덕션 의존성 취약점을 제거했다.
+
+### 보존한 계약
+
+- 공개 API 경로와 응답 구조, 인증·익명 정책, 관리자 처리 정책은 변경하지 않았다.
+- E2E 전용 요청 제한 상향은 `compose.e2e.yaml`에 격리해 기본 운영 설정에 영향을 주지 않는다.
+- 테스트 계정 비밀번호와 토큰은 로그에 출력하지 않는다.
+
+### 검증 기준
+
+- Playwright P0 시나리오 3개 전체 통과
+- 백엔드 40개 테스트, 프론트엔드 lint·production build 통과
+- Compose 애플리케이션과 관측성 구성 정상
+- `npm audit --omit=dev` 취약점 0건
+- GitHub Actions 전체 작업 통과
+
+### 로컬 검증 결과
+
+- 백엔드 22개 테스트 스위트, 40개 테스트 통과
+- 프론트엔드 ESLint와 Next.js `16.2.11` production build 통과
+- Playwright P0 시나리오 3개 병렬 실행 통과
+- Docker `npm ci`와 production build 통과, 취약점 0건
+- Compose 5개 서비스 실행과 Prometheus 수집 대상 `up`

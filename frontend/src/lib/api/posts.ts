@@ -62,7 +62,7 @@ export function getPost(postId: number, init: RequestInit = {}): Promise<PostDet
 }
 
 export function getMyPosts(token: string): Promise<PageResponse<PostSummary>> {
-  return apiFetch<PageResponse<PostSummary>>("/api/v1/posts/me?page=0&size=100", { token });
+  return apiFetch<PageResponse<PostSummary>>("/api/v1/posts/me?page=0&size=50", { token });
 }
 
 export function getPostOwnership(postId: number, token: string): Promise<PostOwnership> {

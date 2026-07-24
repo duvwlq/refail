@@ -21,7 +21,7 @@ export function ReportList({
     <section className={styles.reports}>
       <div>
         <h2>신고 목록</h2>
-        <select value={status} onChange={(event) => onStatusChange(event.target.value)}>
+        <select aria-label="신고 상태" value={status} onChange={(event) => onStatusChange(event.target.value)}>
           <option value="PENDING">처리 대기</option>
           <option value="RESOLVED">처리 완료</option>
           <option value="REJECTED">반려</option>
@@ -30,7 +30,7 @@ export function ReportList({
       {reports.length === 0 ? (
         <p>해당 상태의 신고가 없습니다.</p>
       ) : reports.map((report) => (
-        <article key={report.reportId}>
+        <article key={report.reportId} data-testid={`report-${report.reportId}`}>
           <div>
             <strong>게시글 #{report.targetId}</strong>
             <span>{report.reasonType} · 신고자 #{report.reporterUserId}</span>

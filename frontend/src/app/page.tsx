@@ -84,9 +84,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
         <form className={styles.filters} action="/">
           <input name="keyword" defaultValue={search.keyword} placeholder="제목, 본문, 감정 태그 검색" />
-          <select name="categoryId" defaultValue={search.categoryId ?? ""}><option value="">모든 카테고리</option>{categories.map((category) => <option key={category.categoryId} value={category.categoryId}>{category.name}</option>)}</select>
-          <select name="failureSize" defaultValue={search.failureSize ?? ""}><option value="">모든 크기</option><option value="SMALL">작은 걸림돌</option><option value="MEDIUM">제법 큰 실패</option><option value="LARGE">큰 실패</option></select>
-          <select name="sort" defaultValue={search.sort ?? "latest"}><option value="latest">최신순</option><option value="popular">공감순</option></select>
+          <select aria-label="카테고리 필터" name="categoryId" defaultValue={search.categoryId ?? ""}><option value="">모든 카테고리</option>{categories.map((category) => <option key={category.categoryId} value={category.categoryId}>{category.name}</option>)}</select>
+          <select aria-label="실패 크기 필터" name="failureSize" defaultValue={search.failureSize ?? ""}><option value="">모든 크기</option><option value="SMALL">작은 걸림돌</option><option value="MEDIUM">제법 큰 실패</option><option value="LARGE">큰 실패</option></select>
+          <select aria-label="정렬" name="sort" defaultValue={search.sort ?? "latest"}><option value="latest">최신순</option><option value="popular">공감순</option></select>
           <button>검색</button><Link href="/#records">초기화</Link>
         </form>
 

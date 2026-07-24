@@ -44,3 +44,44 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:18080
         run: npm run build
+
+  e2e-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Start E2E environment
+        run: docker compose -f compose.yaml -f compose.e2e.yaml --env-file .env.example up -d --build --wait --wait-timeout 180
+      - name: Seed E2E admin
+        shell: pwsh
+        run: ./scripts/seed-e2e-admin.ps1
+      - name: Run P0 browser scenarios
+        working-directory: frontend
+        run: npm run test:e2e
+      - name: Capture Compose logs
+        if: failure()
+        run: docker compose -f compose.yaml -f compose.e2e.yaml --env-file .env.example logs --no-color > compose-e2e.log
+      - name: Upload E2E diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-diagnostics
+          if-no-files-found: ignore
+          path: |
+            compose-e2e.log
+            frontend/playwright-report/
+            frontend/test-results/
+      - name: Stop E2E environment
+        if: always()
+        run: docker compose -f compose.yaml -f compose.e2e.yaml --env-file .env.example down -v
