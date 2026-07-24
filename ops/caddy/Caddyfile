@@ -1,0 +1,5 @@
+import /etc/caddy/common.caddy
+
+{$APP_DOMAIN} {
+	import refail_routes
+}

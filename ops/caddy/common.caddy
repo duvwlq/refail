@@ -1,0 +1,24 @@
+(refail_routes) {
+	header {
+		-Server
+		-X-Powered-By
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+
+	encode zstd gzip
+
+	@api path /api/*
+	handle @api {
+		# Caddy ignores incoming X-Forwarded-* values by default and rebuilds them
+		# from the direct connection, preventing client header spoofing.
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

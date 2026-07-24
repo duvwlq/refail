@@ -1,0 +1,14 @@
+{
+	skip_install_trust
+}
+
+import /etc/caddy/common.caddy
+
+http://localhost {
+	redir https://localhost:{$HTTPS_PORT}{uri} 308
+}
+
+https://localhost {
+	tls internal
+	import refail_routes
+}

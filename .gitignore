@@ -11,3 +11,5 @@ gradle-8.10.2-bin.zip
 .env
 .env.*
 !.env.example
+!.env.production.example
+!.env.production.smoke.example
