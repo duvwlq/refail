@@ -48,7 +48,7 @@
 
 화면: GitHub Actions 또는 README 핵심 성과
 
-> Spring Boot 단일 서버로 제품 복잡도에 맞추되 도메인 경계를 나눴고, 백엔드 37개 테스트와 프론트엔드 lint·production build를 CI에서 검증합니다. Re:Fail은 기능 수보다 정책 선택, 데이터 정합성, 측정 기반 개선을 보여주는 프로젝트입니다.
+> Spring Boot 단일 서버로 제품 복잡도에 맞추되 도메인 경계를 나눴고, 백엔드 40개 테스트와 프론트엔드 lint·production build를 CI에서 검증합니다. Re:Fail은 기능 수보다 정책 선택, 데이터 정합성, 측정 기반 개선을 보여주는 프로젝트입니다.
 
 ## 촬영 체크리스트
 

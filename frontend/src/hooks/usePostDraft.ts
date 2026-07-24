@@ -30,7 +30,13 @@ export function usePostDraft(
   const serializedValue = JSON.stringify(value);
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(key);
+    let raw: string | null = null;
+    let storageUnavailable = false;
+    try {
+      raw = window.localStorage.getItem(key);
+    } catch {
+      storageUnavailable = true;
+    }
     let restoredDraft: PostDraft | null = null;
     if (raw) {
       try {
@@ -45,7 +51,9 @@ export function usePostDraft(
       }
     }
     const restoreTimer = window.setTimeout(() => {
-      if (restoredDraft) {
+      if (storageUnavailable) {
+        setNotice("브라우저 저장소를 사용할 수 없어 자동 저장이 비활성화되었습니다.");
+      } else if (restoredDraft) {
         restore(restoredDraft);
         setNotice("자동 저장된 작성 내용을 복원했습니다.");
       }
@@ -61,14 +69,24 @@ export function usePostDraft(
         version: DRAFT_VERSION,
         value: JSON.parse(serializedValue) as PostDraft,
       };
-      window.localStorage.setItem(key, JSON.stringify(stored));
+      try {
+        window.localStorage.setItem(key, JSON.stringify(stored));
+      } catch {
+        setNotice("브라우저 저장 공간이 부족해 자동 저장하지 못했습니다.");
+      }
     }, 500);
     return () => window.clearTimeout(timer);
   }, [key, ready, serializedValue]);
 
   return {
     notice,
-    clear: () => window.localStorage.removeItem(key),
+    clear: () => {
+      try {
+        window.localStorage.removeItem(key);
+      } catch {
+        // 발행은 성공했으므로 저장소 정리 실패가 화면 흐름을 막지 않게 한다.
+      }
+    },
   };
 }
 

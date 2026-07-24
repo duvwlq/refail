@@ -5,10 +5,10 @@
 이 문서는 `Fail` 프로젝트의 MVP 기준 API 명세를 정의한다.
 
 기준 문서
-- [PLAN.md](D:/Codex_Project/Fail/PLAN.md)
-- [MVP_SPEC.md](D:/Codex_Project/Fail/MVP_SPEC.md)
-- [HARNESS.md](D:/Codex_Project/Fail/HARNESS.md)
-- [ERD.md](D:/Codex_Project/Fail/ERD.md)
+- [PLAN.md](PLAN.md)
+- [MVP_SPEC.md](MVP_SPEC.md)
+- [HARNESS.md](HARNESS.md)
+- [ERD.md](ERD.md)
 
 현재 API 명세는 다음 기준을 따른다.
 - 백엔드는 Spring Boot

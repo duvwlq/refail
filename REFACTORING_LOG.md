@@ -106,3 +106,47 @@
 ### 다음 단계
 
 - 문서와 현재 코드·운영 설정을 동기화한 뒤 Playwright P0 시나리오를 추가한다.
+
+## 4단계: 문서·설정·코드 품질 정합성
+
+### 발견한 문제
+
+- 백엔드 리뷰 문서가 해결된 P1~P3 항목을 현재 위험과 다음 작업으로 계속 표시했다.
+- README와 시연 문서의 자동 테스트 수가 37개로 남아 있었다.
+- 일부 문서 링크가 로컬 절대 경로여서 GitHub에서 열리지 않았다.
+- JWT와 요청 제한 설정은 타입 객체였지만 잘못된 값의 시작 시 검증이 없었다.
+- 초안 JSON은 검증했지만 브라우저 저장소 접근·용량 예외는 처리하지 않았다.
+
+### 선택한 변경
+
+- 리뷰 당시 근거는 보존하고 최초 평가와 현재 해결 상태를 명확히 분리했다.
+- 테스트 기준을 40개로 갱신하고 하네스·API·ERD 링크를 저장소 상대 경로로 통일했다.
+- `JwtProperties`, `RateLimitProperties`에 Bean Validation 제약과 바인딩 실패 테스트를 추가했다.
+- Compose와 `.env.example`의 관리 포트·내부 메트릭·SQL 로그 설정을 일치시켰다.
+- `usePostDraft`가 저장소 접근 거부와 용량 초과를 안내하고 작성 흐름을 계속 유지하도록 했다.
+
+### 보존한 계약
+
+- REST API, JSON 응답, Flyway 스키마와 화면 디자인은 변경하지 않았다.
+- 최초 코드 리뷰의 문제 발견 근거와 당시 수치는 역사 기록으로 유지했다.
+- 관측성 관리 포트와 Prometheus 내부 수집 정책의 기본값을 유지했다.
+
+### 검증 기준
+
+- 백엔드 전체 테스트, 프론트엔드 lint·production build
+- Markdown 내부 링크, `git diff --check`
+- Compose observability 프로필 렌더링
+- Grafana JSON과 Prometheus 설정 검증
+
+### 검증 결과
+
+- 백엔드 40개 테스트 통과
+- 프론트엔드 ESLint와 Next.js production build 통과
+- Markdown 내부 링크와 Grafana 대시보드 JSON 검증 통과
+- `promtool` 설정 1개와 경보 규칙 3개 검증 통과
+- Compose 5개 컨테이너 실행, 애플리케이션 3개 헬스 체크 정상
+- Prometheus의 `backend:9090` 수집 대상 `up`
+
+### 다음 단계
+
+- Playwright P0 E2E 3개와 GitHub Actions 실행·artifact 보존을 구성한다.
