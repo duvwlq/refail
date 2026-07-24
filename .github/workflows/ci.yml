@@ -85,3 +85,28 @@ jobs:
       - name: Stop E2E environment
         if: always()
         run: docker compose -f compose.yaml -f compose.e2e.yaml --env-file .env.example down -v
+
+  production-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Run HTTPS production smoke
+        shell: pwsh
+        run: ./scripts/test-production-deployment.ps1 -KeepRunningOnFailure
+      - name: Capture production logs
+        if: failure()
+        run: docker compose -p refail-production-smoke --env-file .env.production.smoke.example -f compose.yaml -f compose.production.yaml logs --no-color --tail 300 > production-smoke.log
+      - name: Upload production diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-diagnostics
+          if-no-files-found: ignore
+          path: production-smoke.log
+      - name: Stop production environment
+        if: always()
+        run: docker compose -p refail-production-smoke --env-file .env.production.smoke.example -f compose.yaml -f compose.production.yaml down -v --remove-orphans
