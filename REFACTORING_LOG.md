@@ -189,3 +189,28 @@
 - Playwright P0 시나리오 3개 병렬 실행 통과
 - Docker `npm ci`와 production build 통과, 취약점 0건
 - Compose 5개 서비스 실행과 Prometheus 수집 대상 `up`
+
+## 후속 단계: HTTPS 운영 배포 경계
+
+### 발견한 문제
+
+- 개발 Compose가 MySQL, Spring Boot, Next.js를 각각 호스트 포트에 공개했다.
+- API·브라우저 테스트는 통과했지만 실제 HTTPS 프록시에서 Secure Refresh Cookie와 동일 출처 API를 검증하지 않았다.
+- 전달 IP 신뢰는 프록시가 외부 헤더를 무시하고 백엔드 직접 접근이 차단되는 조건과 함께 확인해야 했다.
+
+### 선택한 변경
+
+- Caddy를 유일한 HTTP·HTTPS 진입점으로 두고 API와 웹을 동일 출처로 제공했다.
+- 운영 Compose override에서 DB·백엔드·프론트엔드·관리 포트의 호스트 매핑을 제거했다.
+- 비루트 이미지, read-only 파일 시스템, capability 제거와 보안 응답 헤더를 적용했다.
+- HTTPS 인증 수명주기와 포트 경계를 10단계 스모크와 GitHub Actions로 자동화했다.
+
+### 검증 결과
+
+- MySQL, Spring Boot, Next.js, Caddy 네 서비스 `healthy`
+- Caddy의 HTTP `18000`, HTTPS `18443` 외 테스트 프로젝트 공개 포트 없음
+- HTTP 리다이렉트, HTTPS SSR·헬스·Swagger 비노출과 보안 헤더 통과
+- Secure Refresh Cookie 발급·회전, 게시글 작성, 로그아웃 후 갱신 `401` 통과
+- 테스트 컨테이너·네트워크·볼륨 자동 정리
+
+실제 외부 도메인 인증서와 서버 방화벽은 클라우드·DNS 자격 증명이 필요하므로 로컬 스모크 결과와 구분한다.

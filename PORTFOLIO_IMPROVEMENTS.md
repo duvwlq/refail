@@ -57,6 +57,7 @@
 | 조회 성능 | 목록에서 작성자·카테고리 지연 로딩으로 N+1 발생 | EntityGraph, 일괄 후속 기록 조회, 복합 인덱스, 캐시 | SQL 3회 이하 회귀 테스트와 API 측정 |
 | 운영 안정성 | 실제 MySQL 잠금, 권한 회수, 입력 폭주를 H2만으로 보장하기 어려움 | 잠금 순서 통일, 상태 정책 중앙화, 입력 상한, Testcontainers | MySQL 8.4 동시 요청·정책 통합 테스트 |
 | 배포·관측 | 개발 PC 밖에서 재현하기 어렵고 장애 요청을 추적하기 어려움 | 다단계 Docker 이미지, Compose, 요청 ID, Actuator·Prometheus·Grafana | 5개 컨테이너 실행, Prometheus 타깃 UP, Grafana 대시보드 자동 등록 검증 |
+| 운영 네트워크 | 개발 Compose가 DB·API·웹 포트를 각각 공개하고 HTTPS 쿠키 흐름을 검증하지 않음 | Caddy HTTPS 단일 진입점, 동일 출처 API, 내부 전용 서비스 네트워크 | 포트 경계 검사와 인증 수명주기 운영 스모크 10단계 |
 | 시연 준비 | 빈 서비스는 핵심 흐름을 보여주기 어려움 | 분야별 실패와 후속 기록 시연 데이터 구성 | 재실행 가능한 시드 스크립트 검증 |
 
 ### 최종 고도화 결과
@@ -67,7 +68,8 @@
 - 관리자 운영 지표의 SQL을 `7개`에서 `2개`로 줄이고 평균 집계 시간을 `6.75ms`에서 `3.18ms`로 줄였다.
 - 로그인·회원가입·토큰 갱신·신고 API에 메모리 상한이 있는 요청 제한을 적용했다.
 - Prometheus 경보 3개와 Grafana 패널 6개를 Compose 프로필 하나로 재현했다.
-- 최종 기준 백엔드 40개 테스트와 프론트엔드 lint·production build가 통과했다.
+- 최종 기준 백엔드 40개 테스트, 프론트엔드 lint·production build, Playwright P0 3개가 통과했다.
+- 운영 HTTPS 경로에서 Secure Cookie 회전, 게시글 작성, 로그아웃 폐기와 Caddy 외 포트 비노출을 자동 검증했다.
 
 ---
 
@@ -316,6 +318,49 @@ H2 MySQL 호환 모드는 SQL 문법 일부를 확인할 수 있지만 InnoDB의
 
 ---
 
+### 4.10 HTTPS 단일 진입점과 운영 배포 스모크
+
+**문제**
+
+개발 Compose는 MySQL, Spring Boot, Next.js를 각각 호스트 포트에 공개했다. 기능 테스트는 통과했지만 실제 HTTPS 프록시에서 Secure Refresh Cookie, 동일 출처 API, 전달 IP 신뢰 경계와 운영 Swagger 비노출이 함께 동작한다는 근거가 없었다.
+
+**제약과 선택**
+
+포트폴리오용 단일 서버에 Kubernetes나 별도 로드 밸런서를 추가하면 비용과 운영 복잡도가 커진다. Caddy 하나를 공개 게이트웨이로 두고 기존 Compose에 운영 override를 합성하는 방식을 선택했다.
+
+**구현**
+
+- Caddy가 HTTP를 HTTPS로 리다이렉트하고 `/api/*`는 Spring Boot, 나머지는 Next.js로 전달한다.
+- 브라우저 번들은 빈 API Base URL을 사용해 동일 출처로 호출하고 SSR만 Docker 내부 백엔드 주소를 사용한다.
+- `!reset`으로 개발 Compose의 MySQL·백엔드·프론트엔드·관측성 호스트 포트를 운영 구성에서 제거했다.
+- Caddy는 외부 `X-Forwarded-*` 값을 기본 보안 정책으로 무시하고 직접 연결 정보로 재설정한다.
+- 백엔드는 직접 노출이 차단된 내부 경계에서만 전달 IP를 요청 제한에 사용한다.
+- 비루트 애플리케이션 이미지, read-only 파일 시스템, 임시 파일 시스템, capability 제거와 `no-new-privileges`를 적용했다.
+- HSTS, MIME 스니핑 차단, frame 차단, Referrer·Permissions Policy 헤더를 게이트웨이에서 적용했다.
+
+**자동 검증**
+
+`scripts/test-production-deployment.ps1`은 별도 Docker 프로젝트를 만들고 다음 흐름을 검증한 뒤 볼륨까지 제거한다.
+
+1. HTTP에서 HTTPS 리다이렉트
+2. HTTPS 메인 SSR과 공개 헬스 체크
+3. Request ID와 보안 헤더
+4. 운영 Swagger `404`
+5. 회원가입과 로그인
+6. `Secure`, `HttpOnly`, `SameSite=Lax`, 제한된 `Path`
+7. Refresh Token 회전
+8. 인증 게시글 작성과 공개 조회
+9. 로그아웃 후 기존 Refresh Token `401`
+10. Caddy 외 호스트 포트 비노출
+
+토큰, 쿠키와 비밀번호는 스크립트 메모리에서만 사용하고 출력하지 않는다. 같은 검증은 GitHub Actions의 독립 작업에서 실행된다.
+
+**결과와 한계**
+
+개발 편의용 공개 포트와 운영 네트워크 경계를 분리하고, 구성 파일이 아니라 실제 HTTPS 사용자 흐름으로 배포 가능성을 증명했다. 로컬 검증은 Caddy 내부 CA를 사용하며 공개 인증서가 아니다. 실제 외부 URL은 클라우드·DNS 자격 증명이 준비된 뒤 같은 운영 Compose로 배포해야 한다.
+
+---
+
 ## 5. 기술 선택 근거
 
 ### Spring Boot 단일 서버
@@ -350,6 +395,7 @@ H2 MySQL 호환 모드는 SQL 문법 일부를 확인할 수 있지만 InnoDB의
 | 실제 MySQL 정책·동시성 | `MySqlCoreIntegrationTest`, Testcontainers MySQL 8.4 |
 | 요청 추적·메트릭 | `RequestObservabilityIntegrationTest` |
 | 운영 Swagger 분리 | `SwaggerProductionProfileIntegrationTest` |
+| HTTPS 운영 경계 | `scripts/test-production-deployment.ps1`, GitHub Actions `production-smoke` |
 | MySQL 스키마 | Flyway 시작 로그, `SHOW INDEX` |
 | 시연 데이터 | `scripts/seed-demo-data.ps1` |
 
@@ -418,12 +464,10 @@ H2 MySQL 호환 모드는 SQL 문법 일부를 확인할 수 있지만 InnoDB의
 
 우선순위는 실제 데이터와 측정 결과를 기준으로 결정한다.
 
-1. MySQL FULLTEXT 기반 제목·본문 검색과 검색 성능 비교
-2. 관리자 운영 지표 집계 쿼리 통합과 짧은 TTL 캐시
-3. JWT Refresh Token과 로그아웃 토큰 무효화 정책
-4. Testcontainers 테스트의 반복 실행으로 교착 상태 회귀 검증 강화
-5. Prometheus·Grafana 대시보드와 오류율 알림 기준 정의
-6. 실제 배포 주소와 시연 영상 추가
+1. 실제 도메인 배포 주소와 3~5분 시연 영상 추가
+2. 운영 서버 외부 저장소를 사용한 정기 DB 백업·복구 훈련
+3. 장시간 부하와 디스크 고갈 상황의 경보·복구 검증
+4. 키보드 탐색과 모바일 화면을 포함한 접근성 자동 검사
 
 ---
 
@@ -439,3 +483,4 @@ H2 MySQL 호환 모드는 SQL 문법 일부를 확인할 수 있지만 InnoDB의
 - `PERFORMANCE.md`: 성능 설계와 측정 결과
 - `FEATURE_STATUS.md`: 현재 구현 기능
 - `HARNESS.md`: 프로젝트 실행·검증 기준
+- `DEPLOYMENT.md`: HTTPS 운영 배포, 업데이트, 백업·복구와 롤백

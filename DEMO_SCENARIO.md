@@ -52,7 +52,19 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\seed-demo-data
 | 로그인·작성·수정·후속 기록·내 기록 | `frontend/e2e/auth-post-flow.spec.ts` |
 | 신고 확인·숨김·공개 제외·복구 | `frontend/e2e/admin-moderation.spec.ts` |
 
-## 6. 장애 추적 예시
+## 6. 운영 배포 근거
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-production-deployment.ps1
+```
+
+1. 운영 Compose에서 Caddy만 HTTP·HTTPS 포트를 공개하는 결과를 보여준다.
+2. HTTP 리다이렉트와 HTTPS 보안 헤더를 보여준다.
+3. 로그인 응답의 Secure Refresh Cookie 속성을 자동 검증한다고 설명한다.
+4. 갱신 회전, 게시글 작성, 로그아웃 후 토큰 폐기까지 10단계가 통과하는 것을 보여준다.
+5. 로컬 내부 CA는 공개 인증서가 아니며 실제 외부 배포는 별도 자격 증명이 필요하다고 명시한다.
+
+## 7. 장애 추적 예시
 
 1. API 응답의 `X-Request-ID`를 확인한다.
 2. 같은 ID가 백엔드 로그에 기록되는 것을 확인한다.

@@ -187,6 +187,7 @@
 3. [핵심 흐름 회귀 매트릭스](FLOW_REGRESSION_MATRIX.md)
 4. [리팩터링 기록](REFACTORING_LOG.md)
 5. [대표 시연 시나리오](DEMO_SCENARIO.md)
+6. [운영 배포·복구 가이드](DEPLOYMENT.md)
 
 ## 15. 백엔드 상태 정책
 
@@ -215,3 +216,7 @@
 - 요청 제한 키 저장소는 최대 크기와 만료 정리 정책을 가져야 한다.
 - Prometheus 내부 수집 모드는 별도 관리 포트가 외부에 공개되지 않을 때만 활성화한다.
 - Grafana 대시보드와 Prometheus 경보 규칙은 Compose 프로필로 재현 가능해야 한다.
+- 운영 Compose는 Caddy의 HTTP·HTTPS 외 호스트 포트를 공개하지 않는다.
+- 운영 브라우저 API는 HTTPS 동일 출처를 사용하고 SSR만 내부 백엔드 주소를 사용한다.
+- 운영 Refresh Cookie의 `Secure`, `HttpOnly`, `SameSite`, 제한된 `Path`를 배포 스모크에서 확인한다.
+- HTTPS 운영 스모크는 토큰·쿠키·비밀번호를 출력하지 않고 성공·실패 단계만 보고한다.

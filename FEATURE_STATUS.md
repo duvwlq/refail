@@ -40,6 +40,9 @@
 - 요청 ID와 API 지연 시간 로그
 - Prometheus·Grafana 대시보드와 경보 규칙
 - Docker Compose와 GitHub Actions 자동 검증
+- Caddy HTTPS 단일 진입점과 동일 출처 API
+- 운영 DB·백엔드·프론트엔드·관리 포트 비노출
+- Secure Cookie 인증 수명주기와 보안 헤더 운영 스모크 10단계
 
 ## 로컬 시연 계정
 - 일반 사용자: `demo@refail.local` / `password123`
