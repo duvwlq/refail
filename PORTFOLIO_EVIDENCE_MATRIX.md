@@ -52,6 +52,6 @@
 | 백엔드 전체 테스트 | 40개 성공, 실패·오류·건너뜀 0 | 2026-07-24 `gradlew test --rerun-tasks`, XML 22개 스위트 |
 | 프론트엔드 lint | 성공 | 2026-07-24 `npm run lint` |
 | 프론트엔드 production build | 성공 | 2026-07-24 Next.js 16.2.11 `npm run build` |
-| Playwright P0 3개 | 원격 CI 확인 예정 | 현재 포트폴리오 커밋의 GitHub Actions |
-| HTTPS 운영 스모크 10단계 | 원격 CI 확인 예정 | 현재 포트폴리오 커밋의 GitHub Actions |
-| 원격 CI | 푸시 후 확인 예정 | 현재 포트폴리오 커밋의 GitHub Actions URL |
+| Playwright P0 3개 | 성공, 2분 46초 | [GitHub Actions 실행 30077583631](https://github.com/duvwlq/refail/actions/runs/30077583631) |
+| HTTPS 운영 스모크 10단계 | 성공, 2분 18초 | [GitHub Actions 실행 30077583631](https://github.com/duvwlq/refail/actions/runs/30077583631) |
+| 원격 CI | 백엔드·프론트엔드·E2E·운영 스모크 모두 성공 | [GitHub Actions 실행 30077583631](https://github.com/duvwlq/refail/actions/runs/30077583631) |
