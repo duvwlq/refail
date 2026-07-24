@@ -3,6 +3,12 @@
 ## 포트폴리오 작성
 
 - `PORTFOLIO_IMPROVEMENTS.md`: 문제, 선택, 구현, 검증, 성과를 모은 포트폴리오용 개선 기록
+- `PORTFOLIO_PROBLEM_SOLVING.md`: 대표 백엔드 문제별 제목, 본문, 짧은 문구와 과장 방지 기준
+- `PORTFOLIO_WRITING_GOAL_PROMPT.md`: 포트폴리오 초안, 한 페이지 요약, 면접 답변과 근거표를 만드는 목표 모드 프롬프트
+- `PORTFOLIO_DRAFT.md`: 채용 담당자와 백엔드 면접관을 위한 5분 분량 포트폴리오 본문
+- `PORTFOLIO_ONE_PAGE.md`: 이력서·Notion 상단에 사용할 한 페이지 요약
+- `PORTFOLIO_INTERVIEW.md`: 핵심 질문 9개의 30초·1분 면접 답변
+- `PORTFOLIO_EVIDENCE_MATRIX.md`: 포트폴리오 주장과 코드·테스트·측정 근거의 연결표
 - `PORTFOLIO_POINTS.md`: 문제 정의와 핵심 정책, MVP, 기술 선택 근거
 - `FEATURE_STATUS.md`: 현재 구현된 기능과 시연 계정
 
@@ -38,4 +44,4 @@
 - `BACKEND_REVIEW_PROMPT.md`: 백엔드 포트폴리오의 부족한 점을 코드 근거로 점검하는 리뷰 프롬프트
 - `BACKEND_REVIEW_RESULT.md`: 리뷰 프롬프트를 실제 코드와 실행 API에 적용한 발견 사항과 우선순위
 
-포트폴리오나 README를 작성할 때는 `PORTFOLIO_IMPROVEMENTS.md`를 먼저 보고, 세부 근거가 필요할 때 나머지 문서를 참고한다.
+포트폴리오를 작성할 때는 `PORTFOLIO_WRITING_GOAL_PROMPT.md`를 목표 모드에 입력하고, 문장 초안은 `PORTFOLIO_PROBLEM_SOLVING.md`, 상세 근거는 `PORTFOLIO_IMPROVEMENTS.md`와 나머지 문서에서 확인한다.

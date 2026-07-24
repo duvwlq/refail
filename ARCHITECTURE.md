@@ -57,7 +57,7 @@ sequenceDiagram
     D-->>R2: "커밋"
 ```
 
-애플리케이션에서 값을 읽고 더한 뒤 저장하면 lost update가 발생할 수 있다. 공감·신고는 DB 원자적 UPDATE로 집계를 변경하고, 자식 INSERT 후 부모 UPDATE 순서로 잠금 순서를 통일한다. MySQL Testcontainers에서 각 8개 동시 요청 후 실제 행 수와 집계 값이 일치하는지 검증한다.
+애플리케이션에서 값을 읽고 더한 뒤 저장하면 lost update가 발생할 수 있다. 공감·신고는 DB 원자적 UPDATE로 부모 게시글의 집계를 먼저 변경한 뒤 자식 행을 저장하는 순서로 잠금을 통일한다. MySQL Testcontainers에서 각 8개 동시 요청 후 실제 행 수와 집계 값이 일치하는지 검증한다.
 
 ## 4. 검색 조회
 
